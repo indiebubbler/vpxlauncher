@@ -29,6 +29,7 @@ Popup {
         exeField.text = backend.settingsExecutable
         dirsArea.text = backend.settingsDirs
         envArea.text = backend.settingsEnv
+        primeRunBtn.checked = backend.settingsPrimeRun
         argsField.text = backend.settingsArgs
         autoArtBtn.checked = backend.settingsAutoArt
         logField.text = backend.settingsLogPath
@@ -126,7 +127,14 @@ Popup {
         AppTextArea {
             id: envArea
             Layout.fillWidth: true
-            placeholderText: root.tr("e.g. __NV_PRIME_RENDER_OFFLOAD=1")
+            placeholderText: root.tr("e.g. SDL_VIDEODRIVER=x11")
+        }
+
+        AppButton {
+            id: primeRunBtn
+            visible: backend.supportsPrimeRun
+            checkable: true
+            text: checked ? root.tr("Use prime-run: enabled") : root.tr("Use prime-run: disabled")
         }
 
         Text {
@@ -176,7 +184,7 @@ Popup {
                     backend.saveSettings(
                         exeField.text, dirsArea.text, envArea.text, argsField.text,
                         autoArtBtn.checked, logField.text, backend.languageCodes[languageBox.currentIndex],
-                        backend.graphicsBackendValues[graphicsBackendBox.currentIndex]
+                        backend.graphicsBackendValues[graphicsBackendBox.currentIndex], primeRunBtn.checked
                     )
                     root.close()
                 }

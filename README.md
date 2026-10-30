@@ -13,7 +13,7 @@ pip install -r requirements.txt
 python -m vpxlauncher
 ```
 
-On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPinballX_BGFX`, adds its `tables` subfolder, and sets the environment variables used by the previous script (`__NV_PRIME_RENDER_OFFLOAD`, `__GLX_VENDOR_LIBRARY_NAME`, `SDL_VIDEODRIVER`). You can change these settings in **Settings**.
+On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPinballX_BGFX` and adds its `tables` subfolder. On Linux, games are started through `prime-run` by default to use NVIDIA PRIME offload; disable **Use prime-run** in **Settings** to launch VPinball directly. The generic environment variables setting remains available for custom variables (the default is `SDL_VIDEODRIVER=x11`).
 
 ## Using the app
 

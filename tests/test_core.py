@@ -72,14 +72,17 @@ class CoreTests(unittest.TestCase):
         if not config.IS_WINDOWS:
             self.assertEqual(s.vpx_executable, str(exe))
             self.assertEqual(s.table_dirs, [str(exe_dir)])
-            self.assertEqual(s.env["__NV_PRIME_RENDER_OFFLOAD"], "1")
+            self.assertTrue(s.prime_run)
+            self.assertEqual(s.env, {"SDL_VIDEODRIVER": "x11"})
         s.extra_args = "-minimized"
         s.language = "pl"
         s.graphics_backend = "Vulkan"
+        s.prime_run = False
         s.save()
         self.assertEqual(config.Settings.load().extra_args, "-minimized")
         self.assertEqual(config.Settings.load().language, "pl")
         self.assertEqual(config.Settings.load().graphics_backend, "Vulkan")
+        self.assertFalse(config.Settings.load().prime_run)
 
     def test_env_and_args_parsing(self):
         from vpxlauncher import config

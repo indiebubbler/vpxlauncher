@@ -13,10 +13,8 @@ from .i18n import LANGUAGES
 APP_NAME = "vpx-launcher"
 IS_WINDOWS = sys.platform.startswith("win")
 
-# Zmienne z dotychczasowego skryptu (NVIDIA PRIME offload + X11).
+# SDL needs X11 on some Linux setups; NVIDIA offload is handled by prime-run.
 LINUX_DEFAULT_ENV = {
-    "__NV_PRIME_RENDER_OFFLOAD": "1",
-    "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
     "SDL_VIDEODRIVER": "x11",
 }
 
@@ -87,6 +85,7 @@ class Settings:
     vpx_executable: str = ""
     table_dirs: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
+    prime_run: bool = not IS_WINDOWS
     extra_args: str = ""
     auto_artwork: bool = True
     vps_db_url: str = ""
@@ -133,6 +132,11 @@ class Settings:
         s.table_dirs = [str(d) for d in dirs] if isinstance(dirs, list) else []
         env = data.get("env", {})
         s.env = {str(k): str(v) for k, v in env.items()} if isinstance(env, dict) else {}
+        s.prime_run = bool(data.get("prime_run", not IS_WINDOWS)) if not IS_WINDOWS else False
+        if s.prime_run:
+            for key, value in (("__NV_PRIME_RENDER_OFFLOAD", "1"), ("__GLX_VENDOR_LIBRARY_NAME", "nvidia")):
+                if s.env.get(key) == value:
+                    del s.env[key]
         s.extra_args = str(data.get("extra_args", ""))
         s.auto_artwork = bool(data.get("auto_artwork", True))
         s.vps_db_url = str(data.get("vps_db_url", ""))
@@ -158,6 +162,7 @@ class Settings:
             "vpx_executable": self.vpx_executable,
             "table_dirs": self.table_dirs,
             "env": self.env,
+            "prime_run": self.prime_run,
             "extra_args": self.extra_args,
             "auto_artwork": self.auto_artwork,
             "vps_db_url": self.vps_db_url,

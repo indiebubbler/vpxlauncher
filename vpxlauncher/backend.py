@@ -157,6 +157,14 @@ class Backend(QObject):
     def settingsEnv(self):
         return config.env_to_text(self._settings.env)
 
+    @Property(bool, constant=True)
+    def supportsPrimeRun(self):
+        return not config.IS_WINDOWS
+
+    @Property(bool, notify=settingsChanged)
+    def settingsPrimeRun(self):
+        return self._settings.prime_run
+
     @Property(str, notify=settingsChanged)
     def settingsArgs(self):
         return self._settings.extra_args
@@ -517,7 +525,7 @@ class Backend(QObject):
         return text
 
     # ---- ustawienia ----------------------------------------------------------
-    @Slot(str, str, str, str, bool, str, str, str)
+    @Slot(str, str, str, str, bool, str, str, str, bool)
     def saveSettings(
         self,
         executable: str,
@@ -528,12 +536,14 @@ class Backend(QObject):
         log_path: str,
         language: str,
         graphics_backend: str,
+        prime_run: bool,
     ) -> None:
         old_dirs = list(self._settings.table_dirs)
         old_language = self._settings.language
         self._settings.vpx_executable = executable.strip()
         self._settings.table_dirs = [norm(d.strip()) for d in dirs.splitlines() if d.strip()]
         self._settings.env = config.text_to_env(env)
+        self._settings.prime_run = prime_run if not config.IS_WINDOWS else False
         self._settings.extra_args = args.strip()
         self._settings.auto_artwork = auto_art
         self._settings.log_path = log_path.strip() or str(config.default_log_path())
@@ -661,6 +671,16 @@ class Backend(QObject):
             self._set_status(self._text("Table file not found: {path}", path=row["path"]))
             return
 
+        executable = exe
+        arguments = config.split_args(self._settings.extra_args) + ["-play", row["path"]]
+        if self._settings.prime_run:
+            prime_run = shutil.which("prime-run")
+            if prime_run is None:
+                self._set_status(self._text("Could not find prime-run. Install it or disable it in Settings."))
+                return
+            executable = prime_run
+            arguments = [exe, *arguments]
+
         proc = QProcess(self)
         env = QProcessEnvironment.systemEnvironment()
         for key, value in self._settings.env.items():
@@ -676,7 +696,7 @@ class Backend(QObject):
         self._proc = proc
         self._set_running(True)
         self._set_status(self._text("Launching: {name}{note}...", name=row["name"], note=self._monitor_note))
-        proc.start(exe, config.split_args(self._settings.extra_args) + ["-play", row["path"]])
+        proc.start(executable, arguments)
 
     def _on_started(self, table_id: int, name: str) -> None:
         self._lib.record_play(table_id)
