@@ -33,6 +33,7 @@ Popup {
         autoArtBtn.checked = backend.settingsAutoArt
         logField.text = backend.settingsLogPath
         languageBox.currentIndex = backend.languageCodes.indexOf(backend.language)
+        graphicsBackendBox.currentIndex = backend.graphicsBackendValues.indexOf(backend.graphicsBackend)
     }
 
     contentItem: ColumnLayout {
@@ -71,6 +72,28 @@ Popup {
                 Layout.preferredWidth: 180
                 model: backend.languageNames
             }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Text {
+                text: root.tr("Graphics backend")
+                color: theme.muted
+                font.pixelSize: 12
+                Layout.fillWidth: true
+            }
+            ComboBox {
+                id: graphicsBackendBox
+                Layout.preferredWidth: 240
+                model: backend.graphicsBackendNames
+            }
+        }
+        Text {
+            text: root.tr("VPinball may fall back to its default if the selected backend is unavailable.")
+            color: theme.muted
+            font.pixelSize: 11
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
         }
 
         Text {
@@ -152,7 +175,8 @@ Popup {
                 onClicked: {
                     backend.saveSettings(
                         exeField.text, dirsArea.text, envArea.text, argsField.text,
-                        autoArtBtn.checked, logField.text, backend.languageCodes[languageBox.currentIndex]
+                        autoArtBtn.checked, logField.text, backend.languageCodes[languageBox.currentIndex],
+                        backend.graphicsBackendValues[graphicsBackendBox.currentIndex]
                     )
                     root.close()
                 }

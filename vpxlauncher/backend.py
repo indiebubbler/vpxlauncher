@@ -129,6 +129,18 @@ class Backend(QObject):
     def languageNames(self):
         return list(i18n.LANGUAGES.values())
 
+    @Property(str, notify=settingsChanged)
+    def graphicsBackend(self):
+        return self._settings.graphics_backend
+
+    @Property(list, constant=True)
+    def graphicsBackendValues(self):
+        return list(config.graphics_backend_options())
+
+    @Property(list, notify=settingsChanged)
+    def graphicsBackendNames(self):
+        return [self._graphics_backend_label(backend) for backend in config.graphics_backend_options()]
+
     @Property(int, notify=libraryChanged)
     def totalTables(self):
         return self._total
@@ -157,6 +169,12 @@ class Backend(QObject):
 
     def _text(self, message: str, **values: object) -> str:
         return i18n.translate(self._settings.language, message, **values)
+
+    def _graphics_backend_label(self, backend: str) -> str:
+        if backend == "Default":
+            return self._text("System default (VPinball auto-select)")
+        label = f"{backend[:8]} {backend[8:]}" if backend.startswith("Direct3D") else backend
+        return self._text(label)
 
     @Slot(str, result=str)
     def translate(self, message: str) -> str:
@@ -499,7 +517,7 @@ class Backend(QObject):
         return text
 
     # ---- ustawienia ----------------------------------------------------------
-    @Slot(str, str, str, str, bool, str, str)
+    @Slot(str, str, str, str, bool, str, str, str)
     def saveSettings(
         self,
         executable: str,
@@ -509,6 +527,7 @@ class Backend(QObject):
         auto_art: bool,
         log_path: str,
         language: str,
+        graphics_backend: str,
     ) -> None:
         old_dirs = list(self._settings.table_dirs)
         old_language = self._settings.language
@@ -519,6 +538,9 @@ class Backend(QObject):
         self._settings.auto_artwork = auto_art
         self._settings.log_path = log_path.strip() or str(config.default_log_path())
         self._settings.language = language if language in i18n.LANGUAGES else "en"
+        self._settings.graphics_backend = (
+            graphics_backend if graphics_backend in config.graphics_backend_options() else "Default"
+        )
         self._settings.save()
         self.settingsChanged.emit()
         if self._settings.language != old_language:
@@ -592,19 +614,32 @@ class Backend(QObject):
         self.monitorsChanged.emit()
         self._set_status(self._text("Game display: {label}.", label=self.monitorLabel))
 
-    def _apply_monitor(self) -> str:
-        """Ustawia ekran w VPinballX.ini przed startem. Zwraca dopisek do komunikatu."""
+    def _apply_vpx_settings(self) -> str:
+        """Applies the selected display and graphics backend before launching VPinball."""
         screens = self._screen_infos()
         index, note = displays.resolve(self._settings.monitor, screens, self._settings.language)
-        if index is None:
-            return ""
         ini = displays.ini_path_for(self._settings.log_path or str(config.default_log_path()))
-        ok, error = displays.apply_display(ini, index, self._settings.language)
+        values = {"GfxBackend": self._settings.graphics_backend}
+        if index is not None:
+            values["Display"] = str(index)
+        ok, error = displays.apply_player_settings(ini, values, self._settings.language)
         if not ok:
-            return f" ({self._text('Display unchanged: {error}', error=error)})"
-        return " " + self._text("on display {index}: {name}", index=index, name=screens[index].name) + (
-            f", {note}" if note else ""
-        )
+            messages = [self._text("Graphics backend unchanged: {error}", error=error)]
+            if index is not None:
+                messages.insert(0, self._text("Display unchanged: {error}", error=error))
+            return f" ({'; '.join(messages)})"
+
+        details = []
+        if index is not None:
+            details.append(self._text("on display {index}: {name}", index=index, name=screens[index].name))
+            if note:
+                details.append(note)
+        backend = self._settings.graphics_backend
+        if backend == "Default":
+            details.append(self._text("using the default graphics backend"))
+        else:
+            details.append(self._text("using the {backend} backend", backend=self._graphics_backend_label(backend)))
+        return " " + ", ".join(details)
 
     # ---- uruchamianie --------------------------------------------------------
     @Slot(int)
@@ -637,7 +672,7 @@ class Backend(QObject):
         proc.finished.connect(self._on_finished)
         proc.errorOccurred.connect(self._on_error)
 
-        self._monitor_note = self._apply_monitor()
+        self._monitor_note = self._apply_vpx_settings()
         self._proc = proc
         self._set_running(True)
         self._set_status(self._text("Launching: {name}{note}...", name=row["name"], note=self._monitor_note))

@@ -75,9 +75,11 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(s.env["__NV_PRIME_RENDER_OFFLOAD"], "1")
         s.extra_args = "-minimized"
         s.language = "pl"
+        s.graphics_backend = "Vulkan"
         s.save()
         self.assertEqual(config.Settings.load().extra_args, "-minimized")
         self.assertEqual(config.Settings.load().language, "pl")
+        self.assertEqual(config.Settings.load().graphics_backend, "Vulkan")
 
     def test_env_and_args_parsing(self):
         from vpxlauncher import config

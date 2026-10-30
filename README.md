@@ -24,6 +24,7 @@ On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPin
 - **Removed tables do not reappear when scanning.** Add the file manually or use *Library → Restore removed tables* to bring them back.
 - **Tile size**: use the *Tiles* button (Small, Medium, Large, Very large, Huge), `Ctrl +` / `Ctrl -`, or `Ctrl` + mouse wheel. Your choice is saved.
 - **Game display**: use the *Game display* link in the footer to choose the monitor where VPinball starts: *Unchanged*, *Automatic* (an external display if connected, otherwise display 0), or a specific display from the list. A specific display is remembered by name, such as `DP-2`. The list refreshes when displays are connected or disconnected.
+- **Graphics backend**: choose *Default*, *OpenGL*, or *Vulkan* in **Settings**; Windows also offers *Direct3D 11* and *Direct3D 12*. The launcher writes the selection to the `[Player] GfxBackend` setting in `VPinballX.ini` before starting the game. If the selected backend is unavailable in your VPinball build or on your system, VPinball may fall back to its default.
 - **Game log**: click *Show game log* at the bottom of the window to open `vpinball.log` (the end of the file, with refresh and copy controls). If the game exits unexpectedly, the status bar suggests checking the log.
 - Shortcuts: `Ctrl+F` to search, arrow keys to navigate, Enter to play, and `Ctrl +` / `Ctrl -` to change tile size.
 

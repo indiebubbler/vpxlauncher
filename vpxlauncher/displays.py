@@ -125,8 +125,12 @@ def ini_path_for(log_path: str) -> Path:
     return Path(log_path).parent / "VPinballX.ini"
 
 
-def apply_display(ini_path: str | os.PathLike, index: int, language: str = "en") -> tuple[bool, str]:
-    """Ustawia [Player] Display w VPinballX.ini. Zwraca (powodzenie, komunikat błędu)."""
+def apply_player_settings(
+    ini_path: str | os.PathLike,
+    values: dict[str, str],
+    language: str = "en",
+) -> tuple[bool, str]:
+    """Updates selected keys in VPinballX.ini, creating one backup before the first change."""
     path = Path(ini_path)
     try:
         raw = path.read_bytes()
@@ -146,10 +150,11 @@ def apply_display(ini_path: str | os.PathLike, index: int, language: str = "en")
     except UnicodeDecodeError:
         text, encoding = body.decode("latin-1"), "latin-1"  # starsze pliki w ANSI: odczyt i zapis bez zmian bajtów
 
-    new_text = set_ini_value(text, "Player", "Display", str(index))
-    # Na wypadek innej nazwy klucza w nowszych wersjach: jeśli plik zawiera PlayfieldDisplay, zsynchronizuj.
-    if get_ini_value(new_text, "Player", "PlayfieldDisplay") is not None:
-        new_text = set_ini_value(new_text, "Player", "PlayfieldDisplay", str(index))
+    new_text = text
+    for key, value in values.items():
+        new_text = set_ini_value(new_text, "Player", key, value)
+        if key == "Display" and get_ini_value(new_text, "Player", "PlayfieldDisplay") is not None:
+            new_text = set_ini_value(new_text, "Player", "PlayfieldDisplay", value)
     if new_text == text or new_text.rstrip("\r\n") == text.rstrip("\r\n"):
         return True, ""  # już ustawione, nie ruszaj pliku
 
@@ -164,3 +169,8 @@ def apply_display(ini_path: str | os.PathLike, index: int, language: str = "en")
     except OSError as exc:
         return False, translate(language, "Could not write settings file {path}: {error}", path=path, error=exc)
     return True, ""
+
+
+def apply_display(ini_path: str | os.PathLike, index: int, language: str = "en") -> tuple[bool, str]:
+    """Sets [Player] Display in VPinballX.ini."""
+    return apply_player_settings(ini_path, {"Display": str(index)}, language)

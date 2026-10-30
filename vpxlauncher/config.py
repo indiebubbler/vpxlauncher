@@ -50,6 +50,12 @@ def default_log_path() -> Path:
     return base / "10.8" / "vpinball.log"
 
 
+def graphics_backend_options() -> tuple[str, ...]:
+    if IS_WINDOWS:
+        return ("Default", "Direct3D11", "Direct3D12", "OpenGL", "Vulkan")
+    return ("Default", "OpenGL", "Vulkan")
+
+
 def env_to_text(env: dict[str, str]) -> str:
     return "\n".join(f"{k}={v}" for k, v in env.items())
 
@@ -88,6 +94,7 @@ class Settings:
     log_path: str = ""
     monitor: str = "keep"  # "keep" | "auto" | "name:<nazwa ekranu>"
     language: str = "en"
+    graphics_backend: str = "Default"
 
     @staticmethod
     def path() -> Path:
@@ -138,6 +145,10 @@ class Settings:
         s.monitor = monitor if monitor in ("keep", "auto") or monitor.startswith("name:") else "keep"
         language = str(data.get("language") or "en")
         s.language = language if language in LANGUAGES else "en"
+        graphics_backend = str(data.get("graphics_backend") or "Default")
+        s.graphics_backend = (
+            graphics_backend if graphics_backend in graphics_backend_options() else "Default"
+        )
         return s
 
     def save(self) -> None:
@@ -154,5 +165,6 @@ class Settings:
             "log_path": self.log_path,
             "monitor": self.monitor,
             "language": self.language,
+            "graphics_backend": self.graphics_backend,
         }
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), "utf-8")

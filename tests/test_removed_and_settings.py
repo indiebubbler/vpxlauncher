@@ -127,6 +127,8 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(config.Settings.load().tile_size, 1)
         path.write_text(json.dumps({"language": "xx"}))
         self.assertEqual(config.Settings.load().language, "en")
+        path.write_text(json.dumps({"graphics_backend": "opengl"}))
+        self.assertEqual(config.Settings.load().graphics_backend, "Default")
 
 
 if __name__ == "__main__":

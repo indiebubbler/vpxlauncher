@@ -101,6 +101,20 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual(displays.get_ini_value(self.ini.read_text(), "Player", "PlayfieldDisplay"), "1")
         self.assertEqual(displays.get_ini_value(self.ini.read_text(), "Player", "Display"), "1")
 
+    def test_apply_multiple_player_settings_with_one_backup(self):
+        self.ini.write_text("[Player]\nDisplay=0\nPlayfieldDisplay=0\n")
+        ok, error = displays.apply_player_settings(
+            self.ini,
+            {"Display": "1", "GfxBackend": "Vulkan"},
+        )
+        self.assertEqual((ok, error), (True, ""))
+        text = self.ini.read_text()
+        self.assertEqual(displays.get_ini_value(text, "Player", "Display"), "1")
+        self.assertEqual(displays.get_ini_value(text, "Player", "PlayfieldDisplay"), "1")
+        self.assertEqual(displays.get_ini_value(text, "Player", "GfxBackend"), "Vulkan")
+        backup = Path(str(self.ini) + displays.BACKUP_SUFFIX)
+        self.assertEqual(backup.read_text(), "[Player]\nDisplay=0\nPlayfieldDisplay=0\n")
+
     def test_missing_file_reports_error_without_creating_it(self):
         ok, err = displays.apply_display(self.ini, 1)
         self.assertFalse(ok)
