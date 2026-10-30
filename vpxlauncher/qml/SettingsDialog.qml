@@ -12,6 +12,11 @@ Popup {
     width: Math.min(700, (parent ? parent.width : 720) - 48)
     closePolicy: Popup.CloseOnEscape
 
+    function tr(message) {
+        const currentLanguage = backend.language
+        return backend.translate(message)
+    }
+
     background: Rectangle {
         radius: 12
         color: theme.surface
@@ -27,33 +32,49 @@ Popup {
         argsField.text = backend.settingsArgs
         autoArtBtn.checked = backend.settingsAutoArt
         logField.text = backend.settingsLogPath
+        languageBox.currentIndex = backend.languageCodes.indexOf(backend.language)
     }
 
     contentItem: ColumnLayout {
         spacing: 8
 
         Text {
-            text: "Ustawienia"
+            text: root.tr("Settings")
             color: theme.text
             font.pixelSize: 20
             font.weight: Font.DemiBold
             Layout.bottomMargin: 8
         }
 
-        Text { text: "Plik wykonywalny VPinballX"; color: theme.muted; font.pixelSize: 12 }
+        Text { text: root.tr("VPinballX executable"); color: theme.muted; font.pixelSize: 12 }
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
             AppTextField {
                 id: exeField
                 Layout.fillWidth: true
-                placeholderText: "VPinballX_BGFX (Linux) lub VPinballX_BGFX.exe (Windows)"
+                placeholderText: root.tr("VPinballX_BGFX (Linux) or VPinballX_BGFX.exe (Windows)")
             }
-            AppButton { text: "Wybierz…"; onClicked: exeDialog.open() }
+            AppButton { text: root.tr("Browse..."); onClicked: exeDialog.open() }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Text {
+                text: root.tr("Language")
+                color: theme.muted
+                font.pixelSize: 12
+                Layout.fillWidth: true
+            }
+            ComboBox {
+                id: languageBox
+                Layout.preferredWidth: 180
+                model: backend.languageNames
+            }
         }
 
         Text {
-            text: "Foldery ze stołami, jeden na linię"
+            text: root.tr("Table folders, one per line")
             color: theme.muted
             font.pixelSize: 12
             Layout.topMargin: 8
@@ -64,17 +85,17 @@ Popup {
             AppTextArea {
                 id: dirsArea
                 Layout.fillWidth: true
-                placeholderText: "Dodaj folder przyciskiem obok"
+                placeholderText: root.tr("Add a folder using the button")
             }
             AppButton {
-                text: "Dodaj folder…"
+                text: root.tr("Add folder...")
                 Layout.alignment: Qt.AlignTop
                 onClicked: dirDialog.open()
             }
         }
 
         Text {
-            text: "Zmienne środowiskowe gry, KLUCZ=wartość w osobnych liniach"
+            text: root.tr("Game environment variables, KEY=value on separate lines")
             color: theme.muted
             font.pixelSize: 12
             Layout.topMargin: 8
@@ -82,11 +103,11 @@ Popup {
         AppTextArea {
             id: envArea
             Layout.fillWidth: true
-            placeholderText: "np. __NV_PRIME_RENDER_OFFLOAD=1"
+            placeholderText: root.tr("e.g. __NV_PRIME_RENDER_OFFLOAD=1")
         }
 
         Text {
-            text: "Dodatkowe argumenty (przed -play)"
+            text: root.tr("Additional arguments (before -play)")
             color: theme.muted
             font.pixelSize: 12
             Layout.topMargin: 8
@@ -94,11 +115,11 @@ Popup {
         AppTextField {
             id: argsField
             Layout.fillWidth: true
-            placeholderText: "opcjonalnie"
+            placeholderText: root.tr("optional")
         }
 
         Text {
-            text: "Plik logu VPinball (vpinball.log)"
+            text: root.tr("VPinball log file (vpinball.log)")
             color: theme.muted
             font.pixelSize: 12
             Layout.topMargin: 8
@@ -107,14 +128,16 @@ Popup {
             Layout.fillWidth: true
             spacing: 8
             AppTextField { id: logField; Layout.fillWidth: true }
-            AppButton { text: "Wybierz…"; onClicked: logFileDialog.open() }
+            AppButton { text: root.tr("Browse..."); onClicked: logFileDialog.open() }
         }
 
         AppButton {
             id: autoArtBtn
             Layout.topMargin: 8
             checkable: true
-            text: checked ? "Pobieraj grafiki po skanowaniu: włączone" : "Pobieraj grafiki po skanowaniu: wyłączone"
+            text: checked
+                  ? root.tr("Download artwork after scanning: enabled")
+                  : root.tr("Download artwork after scanning: disabled")
         }
 
         RowLayout {
@@ -122,12 +145,15 @@ Popup {
             Layout.topMargin: 16
             spacing: 8
             Item { Layout.fillWidth: true }
-            AppButton { text: "Anuluj"; onClicked: root.close() }
+            AppButton { text: root.tr("Cancel"); onClicked: root.close() }
             AppButton {
-                text: "Zapisz"
+                text: root.tr("Save")
                 accent: true
                 onClicked: {
-                    backend.saveSettings(exeField.text, dirsArea.text, envArea.text, argsField.text, autoArtBtn.checked, logField.text)
+                    backend.saveSettings(
+                        exeField.text, dirsArea.text, envArea.text, argsField.text,
+                        autoArtBtn.checked, logField.text, backend.languageCodes[languageBox.currentIndex]
+                    )
                     root.close()
                 }
             }
@@ -135,17 +161,17 @@ Popup {
 
         FileDialog {
             id: exeDialog
-            title: "Wybierz plik VPinballX"
+            title: root.tr("Choose VPinballX executable")
             onAccepted: exeField.text = backend.urlToPath(selectedFile)
         }
         FileDialog {
             id: logFileDialog
-            title: "Wybierz plik vpinball.log"
+            title: root.tr("Choose vpinball.log file")
             onAccepted: logField.text = backend.urlToPath(selectedFile)
         }
         FolderDialog {
             id: dirDialog
-            title: "Wybierz folder ze stołami"
+            title: root.tr("Choose table folder")
             onAccepted: {
                 var p = backend.urlToPath(selectedFolder)
                 var cur = dirsArea.text.trim()

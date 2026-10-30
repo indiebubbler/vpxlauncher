@@ -104,7 +104,7 @@ class ApplyTests(unittest.TestCase):
     def test_missing_file_reports_error_without_creating_it(self):
         ok, err = displays.apply_display(self.ini, 1)
         self.assertFalse(ok)
-        self.assertIn("nie znaleziono", err)
+        self.assertIn("Could not find settings file", err)
         self.assertFalse(self.ini.exists())
 
     def test_ini_path_next_to_log(self):

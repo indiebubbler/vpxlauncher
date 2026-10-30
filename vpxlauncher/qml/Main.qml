@@ -13,9 +13,14 @@ ApplicationWindow {
     title: "VPX Launcher"
     color: theme.bg
 
-    property string sortLabel: "Nazwa"
-    readonly property var tileNames: ["Małe", "Średnie", "Duże", "Bardzo duże", "Ogromne"]
+    property string sortLabel: "Name"
+    readonly property var tileNames: ["Small", "Medium", "Large", "Very large", "Huge"]
     readonly property var tileWidths: [160, 210, 280, 380, 520]
+
+    function tr(message) {
+        const currentLanguage = backend.language
+        return backend.translate(message)
+    }
 
     function stepTile(delta) {
         backend.setTileSize(Math.max(0, Math.min(4, backend.tileSize + delta)))
@@ -85,32 +90,32 @@ ApplicationWindow {
                 id: search
                 Layout.fillWidth: true
                 Layout.maximumWidth: 420
-                placeholderText: "Szukaj stołu lub autora (Ctrl+F)"
+                placeholderText: win.tr("Search tables or authors (Ctrl+F)")
                 onTextChanged: backend.setQuery(text)
             }
             Item { Layout.fillWidth: true }
             AppButton {
                 id: favBtn
-                text: "Tylko ulubione"
+                text: win.tr("Favorites only")
                 checkable: true
                 onToggled: backend.setFavoritesOnly(checked)
             }
             AppButton {
                 id: sortBtn
-                text: "Sortuj: " + win.sortLabel
+                text: win.tr("Sort:") + " " + win.tr(win.sortLabel)
                 onClicked: sortMenu.popup(sortBtn, 0, sortBtn.height + 4)
             }
             AppButton {
                 id: sizeBtn
-                text: "Kafelki: " + win.tileNames[backend.tileSize]
+                text: win.tr("Tiles:") + " " + win.tr(win.tileNames[backend.tileSize])
                 onClicked: sizeMenu.popup(sizeBtn, 0, sizeBtn.height + 4)
             }
             AppButton {
                 id: libBtn
-                text: "Biblioteka"
+                text: win.tr("Library")
                 onClicked: libMenu.popup(libBtn, 0, libBtn.height + 4)
             }
-            AppButton { text: "Ustawienia"; onClicked: settingsDialog.open() }
+            AppButton { text: win.tr("Settings"); onClicked: settingsDialog.open() }
         }
     }
 
@@ -148,7 +153,7 @@ ApplicationWindow {
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: logLink.left
             anchors.rightMargin: 24
-            text: "Ekran gry: " + backend.monitorLabel
+            text: win.tr("Game display:") + " " + backend.monitorLabel
             color: monitorArea.containsMouse ? theme.lamp : theme.muted
             font.pixelSize: 12
             font.underline: true
@@ -165,7 +170,7 @@ ApplicationWindow {
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: parent.right
             anchors.rightMargin: 16
-            text: "Pokaż log gry"
+            text: win.tr("Show game log")
             color: logArea.containsMouse ? theme.lamp : theme.muted
             font.pixelSize: 12
             font.underline: true
@@ -238,14 +243,14 @@ ApplicationWindow {
         visible: backend.totalTables === 0 && !backend.scanning
 
         Text {
-            text: "Biblioteka jest pusta"
+            text: win.tr("The library is empty")
             color: theme.text
             font.pixelSize: 22
             font.weight: Font.DemiBold
             Layout.alignment: Qt.AlignHCenter
         }
         Text {
-            text: "Zeskanuj folder ze stołami .vpx, dodaj pliki albo upuść je na to okno."
+            text: win.tr("Scan a folder with .vpx tables, add files, or drop them into this window.")
             color: theme.muted
             font.pixelSize: 14
             Layout.alignment: Qt.AlignHCenter
@@ -253,8 +258,8 @@ ApplicationWindow {
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 8
-            AppButton { text: "Skanuj foldery"; accent: true; onClicked: backend.scan() }
-            AppButton { text: "Dodaj stół…"; onClicked: addDialog.open() }
+            AppButton { text: win.tr("Scan folders"); accent: true; onClicked: backend.scan() }
+            AppButton { text: win.tr("Add table..."); onClicked: addDialog.open() }
         }
     }
 
@@ -262,7 +267,7 @@ ApplicationWindow {
     Text {
         anchors.centerIn: parent
         visible: grid.count === 0 && backend.totalTables > 0
-        text: "Nic nie pasuje do wyszukiwania ani filtra."
+        text: win.tr("No tables match the search or filter.")
         color: theme.muted
         font.pixelSize: 14
     }
@@ -277,15 +282,17 @@ ApplicationWindow {
             border.width: 1
             border.color: theme.line
         }
-        AppMenuItem { text: "Skanuj foldery"; enabled: !backend.scanning; onTriggered: backend.scan() }
-        AppMenuItem { text: "Dodaj stół…"; onTriggered: addDialog.open() }
+        AppMenuItem { text: win.tr("Scan folders"); enabled: !backend.scanning; onTriggered: backend.scan() }
+        AppMenuItem { text: win.tr("Add table..."); onTriggered: addDialog.open() }
         AppMenuItem {
-            text: "Pobierz brakujące grafiki"
+            text: win.tr("Download missing artwork")
             enabled: !backend.fetchingArt
             onTriggered: backend.fetchArtwork()
         }
         AppMenuItem {
-            text: backend.removedCount > 0 ? "Przywróć usunięte stoły (" + backend.removedCount + ")" : "Przywróć usunięte stoły"
+            text: backend.removedCount > 0
+                  ? win.tr("Restore removed tables ({count})").replace("{count}", backend.removedCount)
+                  : win.tr("Restore removed tables")
             enabled: backend.removedCount > 0
             onTriggered: backend.restoreRemoved()
         }
@@ -322,11 +329,11 @@ ApplicationWindow {
             border.width: 1
             border.color: theme.line
         }
-        AppMenuItem { text: "Małe"; onTriggered: backend.setTileSize(0) }
-        AppMenuItem { text: "Średnie"; onTriggered: backend.setTileSize(1) }
-        AppMenuItem { text: "Duże"; onTriggered: backend.setTileSize(2) }
-        AppMenuItem { text: "Bardzo duże"; onTriggered: backend.setTileSize(3) }
-        AppMenuItem { text: "Ogromne"; onTriggered: backend.setTileSize(4) }
+        AppMenuItem { text: win.tr("Small"); onTriggered: backend.setTileSize(0) }
+        AppMenuItem { text: win.tr("Medium"); onTriggered: backend.setTileSize(1) }
+        AppMenuItem { text: win.tr("Large"); onTriggered: backend.setTileSize(2) }
+        AppMenuItem { text: win.tr("Very large"); onTriggered: backend.setTileSize(3) }
+        AppMenuItem { text: win.tr("Huge"); onTriggered: backend.setTileSize(4) }
     }
 
     Menu {
@@ -339,10 +346,10 @@ ApplicationWindow {
             border.width: 1
             border.color: theme.line
         }
-        AppMenuItem { text: "Nazwa"; onTriggered: win.setSort("name", "Nazwa") }
-        AppMenuItem { text: "Ostatnio grane"; onTriggered: win.setSort("recent", "Ostatnio grane") }
-        AppMenuItem { text: "Najczęściej grane"; onTriggered: win.setSort("most", "Najczęściej grane") }
-        AppMenuItem { text: "Ostatnio dodane"; onTriggered: win.setSort("added", "Ostatnio dodane") }
+        AppMenuItem { text: win.tr("Name"); onTriggered: win.setSort("name", "Name") }
+        AppMenuItem { text: win.tr("Recently played"); onTriggered: win.setSort("recent", "Recently played") }
+        AppMenuItem { text: win.tr("Most played"); onTriggered: win.setSort("most", "Most played") }
+        AppMenuItem { text: win.tr("Recently added"); onTriggered: win.setSort("added", "Recently added") }
     }
 
     Menu {
@@ -357,40 +364,40 @@ ApplicationWindow {
             border.width: 1
             border.color: theme.line
         }
-        AppMenuItem { text: "Graj"; onTriggered: backend.launch(cardMenu.tableId) }
+        AppMenuItem { text: win.tr("Play"); onTriggered: backend.launch(cardMenu.tableId) }
         AppMenuItem {
-            text: cardMenu.isFavorite ? "Usuń z ulubionych" : "Dodaj do ulubionych"
+            text: cardMenu.isFavorite ? win.tr("Remove from favorites") : win.tr("Add to favorites")
             onTriggered: backend.toggleFavorite(cardMenu.tableId)
         }
         AppMenuItem {
-            text: "Wybierz grafikę…"
+            text: win.tr("Choose artwork...")
             onTriggered: {
                 imageDialog.targetId = cardMenu.tableId
                 imageDialog.open()
             }
         }
         AppMenuItem {
-            text: "Znajdź grafikę online"
+            text: win.tr("Find artwork online")
             enabled: !backend.fetchingArt
             onTriggered: backend.fetchArtworkFor(cardMenu.tableId)
         }
-        AppMenuItem { text: "Usuń grafikę"; onTriggered: backend.clearArtwork(cardMenu.tableId) }
-        AppMenuItem { text: "Usuń z biblioteki"; onTriggered: backend.removeTable(cardMenu.tableId) }
+        AppMenuItem { text: win.tr("Remove artwork"); onTriggered: backend.clearArtwork(cardMenu.tableId) }
+        AppMenuItem { text: win.tr("Remove from library"); onTriggered: backend.removeTable(cardMenu.tableId) }
     }
 
     FileDialog {
         id: addDialog
-        title: "Dodaj stoły"
+        title: win.tr("Add tables")
         fileMode: FileDialog.OpenFiles
-        nameFilters: ["Stoły Visual Pinball (*.vpx)"]
+        nameFilters: [win.tr("Visual Pinball tables (*.vpx)")]
         onAccepted: backend.addTables(selectedFiles)
     }
 
     FileDialog {
         id: imageDialog
         property int targetId: -1
-        title: "Wybierz grafikę stołu"
-        nameFilters: ["Obrazy (*.png *.jpg *.jpeg *.webp)"]
+        title: win.tr("Choose table artwork")
+        nameFilters: [win.tr("Images (*.png *.jpg *.jpeg *.webp)")]
         onAccepted: backend.setArtwork(targetId, selectedFile)
     }
 

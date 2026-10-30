@@ -19,7 +19,7 @@ from PySide6.QtCore import (
     Slot,
 )
 
-from . import config, displays, vps
+from . import config, displays, i18n, vps
 from .library import Library
 from .models import TableModel
 from .scanner import IMAGE_EXTS, VPX_EXT, build_item, norm, scan_directories
@@ -117,6 +117,18 @@ class Backend(QObject):
     def settingsAutoArt(self):
         return self._settings.auto_artwork
 
+    @Property(str, notify=settingsChanged)
+    def language(self):
+        return self._settings.language
+
+    @Property(list, constant=True)
+    def languageCodes(self):
+        return list(i18n.LANGUAGES)
+
+    @Property(list, constant=True)
+    def languageNames(self):
+        return list(i18n.LANGUAGES.values())
+
     @Property(int, notify=libraryChanged)
     def totalTables(self):
         return self._total
@@ -142,6 +154,13 @@ class Backend(QObject):
         if text != self._status:
             self._status = text
             self.statusChanged.emit()
+
+    def _text(self, message: str, **values: object) -> str:
+        return i18n.translate(self._settings.language, message, **values)
+
+    @Slot(str, result=str)
+    def translate(self, message: str) -> str:
+        return self._text(message)
 
     def _set_running(self, value: bool) -> None:
         if value != self._running:
@@ -188,17 +207,17 @@ class Backend(QObject):
     @Slot()
     def scan(self) -> None:
         if not self._settings.table_dirs:
-            self._set_status("Dodaj folder ze stołami w ustawieniach.")
+            self._set_status(self._text("Add a folder with tables in Settings."))
             self.settingsRequested.emit()
             return
         self._start_scan(list(self._settings.table_dirs))
 
     def _start_scan(self, dirs: list[str]) -> None:
         if self._scanning:
-            self._set_status("Skanowanie już trwa.")
+            self._set_status(self._text("A scan is already in progress."))
             return
         self._set_scanning(True)
-        self._set_status("Skanowanie folderów…")
+        self._set_status(self._text("Scanning folders..."))
         threading.Thread(target=self._scan_worker, args=(dirs,), daemon=True).start()
 
     def _scan_worker(self, dirs: list[str]) -> None:
@@ -218,9 +237,9 @@ class Backend(QObject):
         self._set_scanning(False)
         self._reload()
         if self._scan_error:
-            self._set_status(f"Błąd skanowania: {self._scan_error}")
+            self._set_status(self._text("Scan failed: {error}", error=self._scan_error))
         else:
-            self._set_status(f"Skanowanie zakończone: {len(items)} stołów, nowych: {added}.")
+            self._set_status(self._text("Scan complete: {count} tables, {added} new.", count=len(items), added=added))
             if added and self._settings.auto_artwork:
                 self._start_art(self._lib.missing_artwork(only_untried=True))
 
@@ -239,9 +258,9 @@ class Backend(QObject):
         if folders:
             self._start_scan(folders)
         elif added:
-            self._set_status(f"Dodano stołów: {added}.")
+            self._set_status(self._text("Added tables: {count}.", count=added))
         else:
-            self._set_status("Nie dodano nic nowego (obsługiwane są pliki .vpx i foldery).")
+            self._set_status(self._text("Nothing new was added (supported items are .vpx files and folders)."))
 
     @Slot(list)
     def addTables(self, urls: list) -> None:
@@ -268,7 +287,10 @@ class Backend(QObject):
             self._lib.remove(table_id)
             self._reload()
             self._set_status(
-                f"Usunięto z biblioteki: {row['name']}. Plik na dysku został nietknięty, a skanowanie nie doda go ponownie."
+                self._text(
+                    "Removed from library: {name}. The file on disk was not changed and scanning will not add it again.",
+                    name=row["name"],
+                )
             )
 
     @Slot()
@@ -276,7 +298,10 @@ class Backend(QObject):
         count = self._lib.restore_removed()
         self._lib.refresh_missing()
         self._reload()
-        self._set_status(f"Przywrócono usunięte stoły: {count}." if count else "Nie ma usuniętych stołów do przywrócenia.")
+        self._set_status(
+            self._text("Restored removed tables: {count}.", count=count)
+            if count else self._text("There are no removed tables to restore.")
+        )
 
     @Slot(int)
     def setTileSize(self, index: int) -> None:
@@ -317,13 +342,13 @@ class Backend(QObject):
         self._drop_managed_artwork(row["artwork"])
         self._lib.set_artwork(table_id, str(dest))
         self._model.update_row(self._lib.get(table_id))
-        self._set_status(f"Ustawiono grafikę dla: {row['name']}.")
+        self._set_status(self._text("Set artwork for: {name}.", name=row["name"]))
         return True
 
     @Slot(int, QUrl)
     def setArtwork(self, table_id: int, url) -> None:
         if not self._apply_artwork(table_id, to_path(url)):
-            self._set_status("Wybierz obraz PNG, JPG lub WebP.")
+            self._set_status(self._text("Choose a PNG, JPG, or WebP image."))
 
     @Slot(int, list)
     def setArtworkFromDrop(self, table_id: int, urls: list) -> None:
@@ -331,7 +356,7 @@ class Backend(QObject):
         for p in paths:
             if Path(p).suffix.lower() in IMAGE_EXTS:
                 if not self._apply_artwork(table_id, p):
-                    self._set_status("Nie udało się wczytać tego obrazu.")
+                    self._set_status(self._text("Could not load this image."))
                 return
         self._import_paths(paths)  # upuszczono .vpx lub folder zamiast obrazu
 
@@ -342,12 +367,12 @@ class Backend(QObject):
             self._drop_managed_artwork(row["artwork"])
             self._lib.set_artwork(table_id, "")
             self._model.update_row(self._lib.get(table_id))
-            self._set_status(f"Usunięto grafikę: {row['name']}.")
+            self._set_status(self._text("Removed artwork: {name}.", name=row["name"]))
 
     # ---- pobieranie grafik z internetu (baza VPS) ------------------------------
     def _start_art(self, rows: list[dict], force: bool = False) -> None:
         if self._fetching_art:
-            self._set_status("Pobieranie grafik już trwa.")
+            self._set_status(self._text("Artwork download is already in progress."))
             return
         if not rows:
             return
@@ -356,7 +381,7 @@ class Backend(QObject):
         self._art_seen = 0
         self._art_found = 0
         self._set_fetching_art(True)
-        self._set_status(f"Pobieranie grafik: 0/{len(rows)}…")
+        self._set_status(self._text("Downloading artwork: {done}/{total}...", done=0, total=len(rows)))
         jobs = [{"id": r["id"], "name": r["name"]} for r in rows]
         threading.Thread(target=self._art_worker, args=(jobs,), daemon=True).start()
 
@@ -365,7 +390,7 @@ class Backend(QObject):
         try:
             index = vps.VpsIndex.load(config.data_dir() / "vps-index.json", extra)
         except Exception as exc:
-            self._artDone.emit(f"Nie udało się pobrać bazy VPS: {exc}")
+            self._artDone.emit(str(exc) or type(exc).__name__)
             return
         art_dir = config.artwork_dir()
         art_dir.mkdir(parents=True, exist_ok=True)
@@ -403,24 +428,31 @@ class Backend(QObject):
                     os.remove(path)
                 except OSError:
                     pass
-        self._set_status(f"Pobieranie grafik: {self._art_seen}/{self._art_total}…")
+        self._set_status(self._text(
+            "Downloading artwork: {done}/{total}...",
+            done=self._art_seen,
+            total=self._art_total,
+        ))
 
     @Slot(str)
     def _on_art_done(self, error: str) -> None:
         self._set_fetching_art(False)
         if error:
-            self._set_status(error)
+            self._set_status(self._text("Could not download the VPS database: {error}", error=error))
         else:
             self._set_status(
-                f"Grafiki: znaleziono {self._art_found} z {self._art_total}. "
-                "Brakujące dodasz ręcznie, upuszczając obraz na kafelek."
+                self._text(
+                    "Artwork: found {found} of {total}. Add missing artwork by dropping an image onto a tile.",
+                    found=self._art_found,
+                    total=self._art_total,
+                )
             )
 
     @Slot()
     def fetchArtwork(self) -> None:
         rows = self._lib.missing_artwork(only_untried=False)
         if not rows:
-            self._set_status("Wszystkie stoły mają już grafiki.")
+            self._set_status(self._text("All tables already have artwork."))
             return
         self._start_art(rows)
 
@@ -455,31 +487,46 @@ class Backend(QObject):
                     handle.seek(size - LOG_MAX_BYTES)
                 data = handle.read()
         except FileNotFoundError:
-            return (f"Nie znaleziono pliku logu:\n{path}\n\n"
-                    "Uruchom dowolny stół albo wskaż właściwy plik w Ustawieniach.")
+            return self._text(
+                "Could not find the log file:\n{path}\n\nLaunch any table or choose the correct file in Settings.",
+                path=path,
+            )
         except OSError as exc:
-            return f"Nie można odczytać logu ({path}): {exc}"
+            return self._text("Could not read log file ({path}): {error}", path=path, error=exc)
         text = data.decode("utf-8", "replace")
         if truncated:
-            text = "[… pominięto początek pliku …]\n" + text.split("\n", 1)[-1]
+            text = self._text("[... beginning of file omitted ...]\n") + text.split("\n", 1)[-1]
         return text
 
     # ---- ustawienia ----------------------------------------------------------
-    @Slot(str, str, str, str, bool, str)
-    def saveSettings(self, executable: str, dirs: str, env: str, args: str, auto_art: bool, log_path: str) -> None:
+    @Slot(str, str, str, str, bool, str, str)
+    def saveSettings(
+        self,
+        executable: str,
+        dirs: str,
+        env: str,
+        args: str,
+        auto_art: bool,
+        log_path: str,
+        language: str,
+    ) -> None:
         old_dirs = list(self._settings.table_dirs)
+        old_language = self._settings.language
         self._settings.vpx_executable = executable.strip()
         self._settings.table_dirs = [norm(d.strip()) for d in dirs.splitlines() if d.strip()]
         self._settings.env = config.text_to_env(env)
         self._settings.extra_args = args.strip()
         self._settings.auto_artwork = auto_art
         self._settings.log_path = log_path.strip() or str(config.default_log_path())
+        self._settings.language = language if language in i18n.LANGUAGES else "en"
         self._settings.save()
         self.settingsChanged.emit()
+        if self._settings.language != old_language:
+            self.monitorsChanged.emit()
         if self._settings.table_dirs and self._settings.table_dirs != old_dirs:
             self.scan()
         else:
-            self._set_status("Zapisano ustawienia.")
+            self._set_status(self._text("Settings saved."))
 
     # ---- wybór monitora ------------------------------------------------------
     @staticmethod
@@ -496,11 +543,17 @@ class Backend(QObject):
     @Property(list, notify=monitorsChanged)
     def monitorChoices(self):
         screens = self._screen_infos()
-        choices = ["Bez zmian (ustawienie z VPinballX.ini)", "Automatycznie: zewnętrzny, jeśli podłączony"]
-        choices += [f"Ekran {i}: {s.label()}" for i, s in enumerate(screens)]
+        choices = [
+            self._text("Unchanged (use VPinballX.ini setting)"),
+            self._text("Automatic: external display if connected"),
+        ]
+        choices += [
+            self._text("Display {index}: {label}", index=i, label=s.label(self._settings.language))
+            for i, s in enumerate(screens)
+        ]
         mode = self._settings.monitor
         if mode.startswith("name:") and mode[5:] not in {s.name for s in screens}:
-            choices.append(f"{mode[5:]} (odłączony, użyję trybu automatycznego)")
+            choices.append(self._text("{name} (disconnected; using automatic mode)", name=mode[5:]))
         return choices
 
     @Property(int, notify=monitorsChanged)
@@ -518,9 +571,9 @@ class Backend(QObject):
     def monitorLabel(self):
         mode = self._settings.monitor
         if mode == "keep":
-            return "bez zmian"
+            return self._text("unchanged")
         if mode == "auto":
-            return "automatycznie"
+            return self._text("automatic")
         return mode[5:]
 
     @Slot(int)
@@ -537,38 +590,40 @@ class Backend(QObject):
         self._settings.monitor = mode
         self._settings.save()
         self.monitorsChanged.emit()
-        self._set_status(f"Ekran gry: {self.monitorLabel}.")
+        self._set_status(self._text("Game display: {label}.", label=self.monitorLabel))
 
     def _apply_monitor(self) -> str:
         """Ustawia ekran w VPinballX.ini przed startem. Zwraca dopisek do komunikatu."""
         screens = self._screen_infos()
-        index, note = displays.resolve(self._settings.monitor, screens)
+        index, note = displays.resolve(self._settings.monitor, screens, self._settings.language)
         if index is None:
             return ""
         ini = displays.ini_path_for(self._settings.log_path or str(config.default_log_path()))
-        ok, error = displays.apply_display(ini, index)
+        ok, error = displays.apply_display(ini, index, self._settings.language)
         if not ok:
-            return f" (ekran bez zmian: {error})"
-        return f" na ekranie {index}: {screens[index].name}" + (f", {note}" if note else "")
+            return f" ({self._text('Display unchanged: {error}', error=error)})"
+        return " " + self._text("on display {index}: {name}", index=index, name=screens[index].name) + (
+            f", {note}" if note else ""
+        )
 
     # ---- uruchamianie --------------------------------------------------------
     @Slot(int)
     def launch(self, table_id: int) -> None:
         if self._proc is not None:
-            self._set_status("VPinball już działa.")
+            self._set_status(self._text("VPinball is already running."))
             return
         row = self._lib.get(table_id)
         if row is None:
             return
         exe = self._settings.vpx_executable
         if not exe or not Path(exe).is_file():
-            self._set_status("Wskaż plik wykonywalny VPinballX w ustawieniach.")
+            self._set_status(self._text("Choose the VPinballX executable in Settings."))
             self.settingsRequested.emit()
             return
         if not Path(row["path"]).is_file():
             self._lib.refresh_missing()
             self._reload()
-            self._set_status(f"Nie znaleziono pliku stołu: {row['path']}")
+            self._set_status(self._text("Table file not found: {path}", path=row["path"]))
             return
 
         proc = QProcess(self)
@@ -585,13 +640,13 @@ class Backend(QObject):
         self._monitor_note = self._apply_monitor()
         self._proc = proc
         self._set_running(True)
-        self._set_status(f"Uruchamianie: {row['name']}{self._monitor_note}…")
+        self._set_status(self._text("Launching: {name}{note}...", name=row["name"], note=self._monitor_note))
         proc.start(exe, config.split_args(self._settings.extra_args) + ["-play", row["path"]])
 
     def _on_started(self, table_id: int, name: str) -> None:
         self._lib.record_play(table_id)
         self._model.update_row(self._lib.get(table_id))
-        self._set_status(f"Gra trwa: {name}{self._monitor_note}")
+        self._set_status(self._text("Playing: {name}{note}", name=name, note=self._monitor_note))
 
     def _cleanup_proc(self) -> None:
         if self._proc is not None:
@@ -601,16 +656,23 @@ class Backend(QObject):
 
     def _on_finished(self, code: int, status) -> None:
         if status == QProcess.ExitStatus.CrashExit:
-            self._set_status("VPinball zamknął się nieoczekiwanie. Zobacz „Pokaż log gry” na dole okna.")
+            self._set_status(self._text(
+                "VPinball closed unexpectedly. Check Show game log at the bottom of the window."
+            ))
         elif code != 0:
-            self._set_status(f"VPinball zakończył działanie z kodem {code}. Zobacz „Pokaż log gry” na dole okna.")
+            self._set_status(self._text(
+                "VPinball exited with code {code}. Check Show game log at the bottom of the window.",
+                code=code,
+            ))
         else:
-            self._set_status("Gra zakończona. Wybierz kolejny stół.")
+            self._set_status(self._text("Game finished. Choose another table."))
         self._cleanup_proc()
         if self._sort in ("recent", "most"):
             self._reload()
 
     def _on_error(self, error) -> None:
         if error == QProcess.ProcessError.FailedToStart:
-            self._set_status("Nie udało się uruchomić VPinballX. Sprawdź ścieżkę i uprawnienia w ustawieniach.")
+            self._set_status(self._text(
+                "Could not start VPinballX. Check the path and permissions in Settings."
+            ))
             self._cleanup_proc()

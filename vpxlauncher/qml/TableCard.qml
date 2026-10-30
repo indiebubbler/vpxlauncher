@@ -27,6 +27,11 @@ Item {
     readonly property bool hot: hover.containsMouse || lampArea.containsMouse
                                 || starArea.containsMouse || focused
 
+    function tr(message) {
+        const currentLanguage = backend.language
+        return backend.translate(message)
+    }
+
     Rectangle {
         id: card
         anchors.fill: parent
@@ -84,7 +89,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 12
                 visible: root.artwork === "" && root.hot
-                text: "Upuść tu obraz"
+                text: root.tr("Drop an image here")
                 color: theme.muted
                 font.pixelSize: Math.round(12 * root.k)
             }
@@ -185,7 +190,9 @@ Item {
             Text {
                 width: parent.width
                 visible: text !== ""
-                text: root.lastPlayed !== "" ? "Ostatnio: " + root.lastPlayed : ""
+                text: root.lastPlayed !== ""
+                      ? root.tr("Last played: {date}").replace("{date}", root.lastPlayed)
+                      : ""
                 color: theme.muted
                 font.pixelSize: Math.round(11 * root.k)
                 elide: Text.ElideRight

@@ -13,6 +13,11 @@ Popup {
     height: Math.min(760, (parent ? parent.height : 700) - 48)
     closePolicy: Popup.CloseOnEscape
 
+    function tr(message) {
+        const currentLanguage = backend.language
+        return backend.translate(message)
+    }
+
     background: Rectangle {
         radius: 12
         color: theme.surface
@@ -33,7 +38,7 @@ Popup {
         spacing: 10
 
         Text {
-            text: "Log VPinball"
+            text: root.tr("Game log")
             color: theme.text
             font.pixelSize: 20
             font.weight: Font.DemiBold
@@ -79,9 +84,9 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
-            AppButton { text: "Odśwież"; onClicked: root.refresh() }
+            AppButton { text: root.tr("Refresh"); onClicked: root.refresh() }
             AppButton {
-                text: "Kopiuj całość"
+                text: root.tr("Copy all")
                 onClicked: {
                     area.selectAll()
                     area.copy()
@@ -89,7 +94,7 @@ Popup {
                 }
             }
             Item { Layout.fillWidth: true }
-            AppButton { text: "Zamknij"; accent: true; onClicked: root.close() }
+            AppButton { text: root.tr("Close"); accent: true; onClicked: root.close() }
         }
     }
 }

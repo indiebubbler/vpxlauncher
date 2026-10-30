@@ -74,8 +74,10 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(s.table_dirs, [str(exe_dir)])
             self.assertEqual(s.env["__NV_PRIME_RENDER_OFFLOAD"], "1")
         s.extra_args = "-minimized"
+        s.language = "pl"
         s.save()
         self.assertEqual(config.Settings.load().extra_args, "-minimized")
+        self.assertEqual(config.Settings.load().language, "pl")
 
     def test_env_and_args_parsing(self):
         from vpxlauncher import config
@@ -83,6 +85,14 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(config.text_to_env("A=1\n# x\n\nB = two words \nbad"), {"A": "1", "B": "two words"})
         self.assertEqual(config.split_args('-a "b c" -d'), ["-a", "b c", "-d"])
         self.assertEqual(config.split_args("  "), [])
+
+    def test_language_defaults_to_english_and_translates(self):
+        from vpxlauncher import config, i18n
+
+        self.assertEqual(config.Settings.load().language, "en")
+        self.assertEqual(i18n.translate("en", "Settings"), "Settings")
+        self.assertEqual(i18n.translate("pl", "Settings"), "Ustawienia")
+        self.assertEqual(i18n.translate("unknown", "Settings"), "Settings")
 
 
 if __name__ == "__main__":

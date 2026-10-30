@@ -8,6 +8,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .i18n import LANGUAGES
+
 APP_NAME = "vpx-launcher"
 IS_WINDOWS = sys.platform.startswith("win")
 
@@ -85,6 +87,7 @@ class Settings:
     tile_size: int = 1  # indeks: 0 małe, 1 średnie, 2 duże, 3 bardzo duże, 4 ogromne
     log_path: str = ""
     monitor: str = "keep"  # "keep" | "auto" | "name:<nazwa ekranu>"
+    language: str = "en"
 
     @staticmethod
     def path() -> Path:
@@ -133,6 +136,8 @@ class Settings:
         s.log_path = str(data.get("log_path") or default_log_path())
         monitor = str(data.get("monitor") or "keep")
         s.monitor = monitor if monitor in ("keep", "auto") or monitor.startswith("name:") else "keep"
+        language = str(data.get("language") or "en")
+        s.language = language if language in LANGUAGES else "en"
         return s
 
     def save(self) -> None:
@@ -148,5 +153,6 @@ class Settings:
             "tile_size": self.tile_size,
             "log_path": self.log_path,
             "monitor": self.monitor,
+            "language": self.language,
         }
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), "utf-8")

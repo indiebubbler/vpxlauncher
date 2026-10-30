@@ -125,6 +125,8 @@ class SettingsTests(unittest.TestCase):
         self.assertTrue(s.log_path.endswith("vpinball.log"))
         path.write_text(json.dumps({"tile_size": "x"}))
         self.assertEqual(config.Settings.load().tile_size, 1)
+        path.write_text(json.dumps({"language": "xx"}))
+        self.assertEqual(config.Settings.load().language, "en")
 
 
 if __name__ == "__main__":

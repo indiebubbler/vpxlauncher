@@ -13,6 +13,8 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from .i18n import translate
+
 BUILTIN_PREFIXES = ("EDP", "LVDS", "DSI")  # nazwy wbudowanych paneli laptopów (Linux)
 BACKUP_SUFFIX = ".launcher-backup"
 
@@ -24,8 +26,9 @@ class ScreenInfo:
     height: int
     primary: bool = False
 
-    def label(self) -> str:
-        return f"{self.name} ({self.width}×{self.height}{', główny' if self.primary else ''})"
+    def label(self, language: str = "en") -> str:
+        primary = f", {translate(language, 'Primary')}" if self.primary else ""
+        return f"{self.name} ({self.width}×{self.height}{primary})"
 
 
 # ---- wybór ekranu ------------------------------------------------------------
@@ -47,18 +50,22 @@ def pick_auto(screens: list[ScreenInfo]) -> int:
     return non_primary[0] if non_primary else 0
 
 
-def resolve(mode: str, screens: list[ScreenInfo]) -> tuple[int | None, str]:
+def resolve(mode: str, screens: list[ScreenInfo], language: str = "en") -> tuple[int | None, str]:
     """mode: 'keep' | 'auto' | 'name:<nazwa ekranu>'. Zwraca (indeks lub None, notatka)."""
     if mode == "keep" or not screens:
         return None, ""
     if mode == "auto":
-        return pick_auto(screens), "tryb automatyczny"
+        return pick_auto(screens), translate(language, "Automatic mode")
     if mode.startswith("name:"):
         wanted = mode[5:]
         for i, s in enumerate(screens):
             if s.name == wanted:
                 return i, ""
-        return pick_auto(screens), f"ekranu {wanted} nie ma, użyto trybu automatycznego"
+        return pick_auto(screens), translate(
+            language,
+            "Display {name} is disconnected; using automatic mode",
+            name=wanted,
+        )
     return None, ""
 
 
@@ -118,15 +125,19 @@ def ini_path_for(log_path: str) -> Path:
     return Path(log_path).parent / "VPinballX.ini"
 
 
-def apply_display(ini_path: str | os.PathLike, index: int) -> tuple[bool, str]:
+def apply_display(ini_path: str | os.PathLike, index: int, language: str = "en") -> tuple[bool, str]:
     """Ustawia [Player] Display w VPinballX.ini. Zwraca (powodzenie, komunikat błędu)."""
     path = Path(ini_path)
     try:
         raw = path.read_bytes()
     except FileNotFoundError:
-        return False, f"nie znaleziono {path} (uruchom VPinball raz, aby powstał plik ustawień)"
+        return False, translate(
+            language,
+            "Could not find settings file {path} (run VPinball once to create it)",
+            path=path,
+        )
     except OSError as exc:
-        return False, f"nie można odczytać {path}: {exc}"
+        return False, translate(language, "Could not read settings file {path}: {error}", path=path, error=exc)
 
     bom = raw.startswith(b"\xef\xbb\xbf")
     body = raw[3:] if bom else raw
@@ -151,5 +162,5 @@ def apply_display(ini_path: str | os.PathLike, index: int) -> tuple[bool, str]:
         shutil.copymode(path, tmp)
         os.replace(tmp, path)
     except OSError as exc:
-        return False, f"nie można zapisać {path}: {exc}"
+        return False, translate(language, "Could not write settings file {path}: {error}", path=path, error=exc)
     return True, ""
