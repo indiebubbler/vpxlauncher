@@ -34,6 +34,10 @@ NOISE_WORDS = {
 }
 YEAR_RE = re.compile(r"\b(19[3-9]\d|20[0-4]\d)\b")
 VERSION_RE = re.compile(r"\bv?\d+(?:[._]\d+)+[a-z]?\b|\bv\d+[a-z]?\b", re.IGNORECASE)
+AUTHOR_SUFFIX_RE = re.compile(
+    r"\s+(?:by|authors?|designers?|artists?|creators?|table\s+by|created\s+by)\b.*$",
+    re.IGNORECASE,
+)
 
 
 # ---- sieć --------------------------------------------------------------------
@@ -100,12 +104,13 @@ def parse_stem(stem: str) -> tuple[str, int, str]:
         mfr = meta.strip(" ,-/")
     else:
         title = stem
-        title = VERSION_RE.sub(" ", title)
-        title = " ".join(w for w in title.split() if w.casefold() not in NOISE_WORDS)
         y = YEAR_RE.search(title)
         if y:
             year = int(y.group(1))
-            title = YEAR_RE.sub(" ", title)
+    title = AUTHOR_SUFFIX_RE.sub("", title)
+    title = VERSION_RE.sub(" ", title)
+    title = YEAR_RE.sub(" ", title)
+    title = " ".join(w for w in title.split() if w.casefold() not in NOISE_WORDS)
     return title.strip(" -_."), year, mfr
 
 

@@ -39,6 +39,9 @@ class MatchTests(unittest.TestCase):
 
     def test_parse_stem(self):
         self.assertEqual(vps.parse_stem("Twilight Zone (Bally 1993) VPW 1.0"), ("Twilight Zone", 1993, "Bally"))
+        self.assertEqual(vps.parse_stem("Twilight Zone VPW (Bally 1993)"), ("Twilight Zone", 1993, "Bally"))
+        self.assertEqual(vps.parse_stem("Twilight Zone by John Doe"), ("Twilight Zone", 0, ""))
+        self.assertEqual(vps.parse_stem("Twilight Zone (Bally 1993) by John Doe"), ("Twilight Zone", 1993, "Bally"))
         self.assertEqual(vps.parse_stem("Addams_Family VPW v2.1 MOD")[0], "Addams Family")
         self.assertEqual(vps.parse_stem("Gra (Original 2020)"), ("Gra", 2020, "Original"))
 
@@ -48,6 +51,8 @@ class MatchTests(unittest.TestCase):
 
     def test_find_exact_and_the(self):
         self.assertEqual(self.index.find("Twilight Zone (Bally 1993) VPW")["name"], "Twilight Zone")
+        self.assertEqual(self.index.find("Twilight Zone VPW (Bally 1993)")["name"], "Twilight Zone")
+        self.assertEqual(self.index.find("Twilight Zone by John Doe")["name"], "Twilight Zone")
         self.assertEqual(self.index.find("Addams Family (Bally 1992)")["name"], "The Addams Family")
 
     def test_year_and_manufacturer_disambiguate(self):
