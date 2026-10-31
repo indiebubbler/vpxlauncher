@@ -1,4 +1,4 @@
-# VPX Launcher (MVP)
+# VPX Launcher
 
 A modern launcher for Visual Pinball X tables, with an image tile grid, search, favorites, and folder scanning. Built with Python and PySide6 (Qt Quick); runs on Linux and Windows.
 
@@ -25,6 +25,7 @@ On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPin
 - **Tile size**: use the *Tiles* button (Small, Medium, Large, Very large, Huge), `Ctrl +` / `Ctrl -`, or `Ctrl` + mouse wheel. Your choice is saved.
 - **Game display**: use the *Game display* link in the footer to choose the monitor where VPinball starts: *Unchanged*, *Automatic* (an external display if connected, otherwise display 0), or a specific display from the list. A specific display is remembered by name, such as `DP-2`. The list refreshes when displays are connected or disconnected.
 - **Graphics backend**: choose *Default*, *OpenGL*, or *Vulkan* in **Settings**; Windows also offers *Direct3D 11* and *Direct3D 12*. The launcher writes the selection to the `[Player] GfxBackend` setting in `VPinballX.ini` before starting the game. If the selected backend is unavailable in your VPinball build or on your system, VPinball may fall back to its default.
+- **PinMAME cheats**: enable or disable the `Cheat` option in the `[Plugin.PinMAME]` section of `VPinballX.ini` from **Settings**.
 - **Game log**: click *Show game log* at the bottom of the window to open `vpinball.log` (the end of the file, with refresh and copy controls). If the game exits unexpectedly, the status bar suggests checking the log.
 - Shortcuts: `Ctrl+F` to search, arrow keys to navigate, Enter to play, and `Ctrl +` / `Ctrl -` to change tile size.
 
@@ -41,7 +42,7 @@ On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPin
 - Settings: `~/.config/vpx-launcher/settings.json` (Windows: `%APPDATA%\vpx-launcher`)
 - Library and artwork: `~/.local/share/vpx-launcher/` (Windows: `%LOCALAPPDATA%\vpx-launcher`)
 
-## Known MVP limitations
+## Known limitations
 
 - There is no manual selection among multiple match candidates; matching is fully automatic.
 - The official VPS database URL and live downloads have not been verified; the matching logic is tested with sample data. If the URL changes, set the new one in `vps_db_url`.

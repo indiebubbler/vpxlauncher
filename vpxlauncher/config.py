@@ -94,6 +94,7 @@ class Settings:
     monitor: str = "keep"  # "keep" | "auto" | "name:<nazwa ekranu>"
     language: str = "en"
     graphics_backend: str = "Default"
+    cheat: bool = False
 
     @staticmethod
     def path() -> Path:
@@ -153,6 +154,7 @@ class Settings:
         s.graphics_backend = (
             graphics_backend if graphics_backend in graphics_backend_options() else "Default"
         )
+        s.cheat = bool(data.get("cheat", False))
         return s
 
     def save(self) -> None:
@@ -171,5 +173,6 @@ class Settings:
             "monitor": self.monitor,
             "language": self.language,
             "graphics_backend": self.graphics_backend,
+            "cheat": self.cheat,
         }
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), "utf-8")

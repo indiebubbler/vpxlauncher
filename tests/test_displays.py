@@ -115,6 +115,27 @@ class ApplyTests(unittest.TestCase):
         backup = Path(str(self.ini) + displays.BACKUP_SUFFIX)
         self.assertEqual(backup.read_text(), "[Player]\nDisplay=0\nPlayfieldDisplay=0\n")
 
+    def test_apply_settings_in_multiple_sections(self):
+        self.ini.write_text("[Player]\nGfxBackend=Default\n[Plugin.PinMAME]\nCheat=0\n")
+        ok, error = displays.apply_ini_settings(
+            self.ini,
+            {"Player": {"GfxBackend": "Vulkan"}, "Plugin.PinMAME": {"Cheat": "1"}},
+        )
+        self.assertEqual((ok, error), (True, ""))
+        text = self.ini.read_text()
+        self.assertEqual(displays.get_ini_value(text, "Player", "GfxBackend"), "Vulkan")
+        self.assertIsNone(displays.get_ini_value(text, "Player", "Cheat"))
+        self.assertEqual(displays.get_ini_value(text, "Plugin.PinMAME", "Cheat"), "1")
+        ok, error = displays.apply_ini_settings(
+            self.ini,
+            {"Plugin.PinMAME": {"Cheat": "0"}},
+        )
+        self.assertEqual((ok, error), (True, ""))
+        self.assertEqual(
+            displays.get_ini_value(self.ini.read_text(), "Plugin.PinMAME", "Cheat"),
+            "0",
+        )
+
     def test_missing_file_reports_error_without_creating_it(self):
         ok, err = displays.apply_display(self.ini, 1)
         self.assertFalse(ok)

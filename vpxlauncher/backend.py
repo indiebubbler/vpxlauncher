@@ -133,6 +133,10 @@ class Backend(QObject):
     def graphicsBackend(self):
         return self._settings.graphics_backend
 
+    @Property(bool, notify=settingsChanged)
+    def settingsCheat(self):
+        return self._settings.cheat
+
     @Property(list, constant=True)
     def graphicsBackendValues(self):
         return list(config.graphics_backend_options())
@@ -525,7 +529,7 @@ class Backend(QObject):
         return text
 
     # ---- ustawienia ----------------------------------------------------------
-    @Slot(str, str, str, str, bool, str, str, str, bool)
+    @Slot(str, str, str, str, bool, str, str, str, bool, bool)
     def saveSettings(
         self,
         executable: str,
@@ -537,6 +541,7 @@ class Backend(QObject):
         language: str,
         graphics_backend: str,
         prime_run: bool,
+        cheat: bool,
     ) -> None:
         old_dirs = list(self._settings.table_dirs)
         old_language = self._settings.language
@@ -551,6 +556,7 @@ class Backend(QObject):
         self._settings.graphics_backend = (
             graphics_backend if graphics_backend in config.graphics_backend_options() else "Default"
         )
+        self._settings.cheat = cheat
         self._settings.save()
         self.settingsChanged.emit()
         if self._settings.language != old_language:
@@ -629,12 +635,15 @@ class Backend(QObject):
         screens = self._screen_infos()
         index, note = displays.resolve(self._settings.monitor, screens, self._settings.language)
         ini = displays.ini_path_for(self._settings.log_path or str(config.default_log_path()))
-        values = {"GfxBackend": self._settings.graphics_backend}
+        settings = {
+            "Player": {"GfxBackend": self._settings.graphics_backend},
+            "Plugin.PinMAME": {"Cheat": "1" if self._settings.cheat else "0"},
+        }
         if index is not None:
-            values["Display"] = str(index)
-        ok, error = displays.apply_player_settings(ini, values, self._settings.language)
+            settings["Player"]["Display"] = str(index)
+        ok, error = displays.apply_ini_settings(ini, settings, self._settings.language)
         if not ok:
-            messages = [self._text("Graphics backend unchanged: {error}", error=error)]
+            messages = [self._text("VPinball settings unchanged: {error}", error=error)]
             if index is not None:
                 messages.insert(0, self._text("Display unchanged: {error}", error=error))
             return f" ({'; '.join(messages)})"

@@ -77,11 +77,13 @@ class CoreTests(unittest.TestCase):
         s.extra_args = "-minimized"
         s.language = "pl"
         s.graphics_backend = "Vulkan"
+        s.cheat = True
         s.prime_run = False
         s.save()
         self.assertEqual(config.Settings.load().extra_args, "-minimized")
         self.assertEqual(config.Settings.load().language, "pl")
         self.assertEqual(config.Settings.load().graphics_backend, "Vulkan")
+        self.assertTrue(config.Settings.load().cheat)
         self.assertFalse(config.Settings.load().prime_run)
 
     def test_env_and_args_parsing(self):

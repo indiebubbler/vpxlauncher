@@ -35,6 +35,7 @@ Popup {
         logField.text = backend.settingsLogPath
         languageBox.currentIndex = backend.languageCodes.indexOf(backend.language)
         graphicsBackendBox.currentIndex = backend.graphicsBackendValues.indexOf(backend.graphicsBackend)
+        cheatBtn.checked = backend.settingsCheat
     }
 
     contentItem: ColumnLayout {
@@ -95,6 +96,12 @@ Popup {
             font.pixelSize: 11
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
+        }
+
+        AppButton {
+            id: cheatBtn
+            checkable: true
+            text: checked ? root.tr("PinMAME cheats: enabled") : root.tr("PinMAME cheats: disabled")
         }
 
         Text {
@@ -184,7 +191,8 @@ Popup {
                     backend.saveSettings(
                         exeField.text, dirsArea.text, envArea.text, argsField.text,
                         autoArtBtn.checked, logField.text, backend.languageCodes[languageBox.currentIndex],
-                        backend.graphicsBackendValues[graphicsBackendBox.currentIndex], primeRunBtn.checked
+                        backend.graphicsBackendValues[graphicsBackendBox.currentIndex], primeRunBtn.checked,
+                        cheatBtn.checked
                     )
                     root.close()
                 }
