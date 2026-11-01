@@ -87,6 +87,7 @@ def scan_nvram_directory(directory: str | os.PathLike) -> list[dict[str, str | i
                     "scoreText": "",
                     "status": "read_error",
                     "error": str(exc),
+                    "_order": 0,
                 })
                 continue
 
@@ -100,12 +101,13 @@ def scan_nvram_directory(directory: str | os.PathLike) -> list[dict[str, str | i
                     "scoreText": "",
                     "status": "unsupported",
                     "error": "",
+                    "_order": 0,
                 })
                 continue
 
             table_records = []
             try:
-                for entry in layout["records"]:
+                for position, entry in enumerate(layout["records"][:5]):
                     score = _read_score(data, layout, entry)
                     if score == 0:
                         continue
@@ -118,6 +120,7 @@ def scan_nvram_directory(directory: str | os.PathLike) -> list[dict[str, str | i
                         "scoreText": f"{score:,}".replace(",", " "),
                         "status": "score",
                         "error": "",
+                        "_order": position,
                     })
             except (KeyError, TypeError, ValueError) as exc:
                 records.append({
@@ -129,6 +132,7 @@ def scan_nvram_directory(directory: str | os.PathLike) -> list[dict[str, str | i
                     "scoreText": "",
                     "status": "invalid",
                     "error": str(exc),
+                    "_order": 0,
                 })
                 continue
 
@@ -144,14 +148,16 @@ def scan_nvram_directory(directory: str | os.PathLike) -> list[dict[str, str | i
                     "scoreText": "",
                     "status": "empty",
                     "error": "",
+                    "_order": 0,
                 })
 
     records.sort(
         key=lambda record: (
             str(record["title"]).casefold(),
-            record["status"] != "score",
-            -int(record["score"]) if record["status"] == "score" else 0,
-            str(record["label"]).casefold(),
+            str(record["rom"]).casefold(),
+            int(record["_order"]),
         )
     )
+    for record in records:
+        record.pop("_order")
     return records

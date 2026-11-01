@@ -2,6 +2,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -69,6 +70,33 @@ class NVRAMScoreTests(unittest.TestCase):
         self.assertTrue(record["error"])
         with self.assertRaises(FileNotFoundError):
             scan_nvram_directory(self.root / "missing")
+
+    def test_only_reads_first_five_layout_records_in_layout_order(self):
+        from vpxlauncher.scores import scan_nvram_directory
+
+        labels = [
+            "Grand Champion",
+            "First Place",
+            "Second Place",
+            "Third Place",
+            "Fourth Place",
+            "Buy-In Score #1",
+        ]
+        layout = {
+            "title": "Test Table",
+            "byteorder": "little",
+            "records": [
+                {"label": label, "score": index, "length": 1, "encoding": "int"}
+                for index, label in enumerate(labels)
+            ],
+        }
+        (self.root / "testrom.nv").write_bytes(bytes([10, 20, 30, 40, 50, 60]))
+
+        with patch("vpxlauncher.scores._layouts", return_value={"testrom": layout}):
+            records = scan_nvram_directory(self.root)
+
+        self.assertEqual([record["label"] for record in records], labels[:5])
+        self.assertEqual([record["score"] for record in records], [10, 20, 30, 40, 50])
 
 
 if __name__ == "__main__":

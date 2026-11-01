@@ -20,7 +20,7 @@ TRANSLATIONS = {
         "Could not read NVRAM file": "Nie udało się odczytać pliku NVRAM",
         "No NVRAM files found.": "Nie znaleziono plików NVRAM.",
         "Choose PinMAME NVRAM folder": "Wybierz folder NVRAM PinMAME",
-        "Only known NVRAM layouts are decoded; other files are listed as unsupported.": "Odczytywane są tylko rozpoznane formaty NVRAM; pozostałe pliki są oznaczone jako nieobsługiwane.",
+        "Only the first five entries in known NVRAM layouts are decoded; other files are listed as unsupported.": "Odczytywanych jest tylko pięć pierwszych pozycji z rozpoznanych formatów NVRAM; pozostałe pliki są oznaczone jako nieobsługiwane.",
         "Scanning NVRAM files...": "Skanuję pliki NVRAM…",
         "NVRAM scan complete: {count} files, {scores} scores decoded.": "Skanowanie NVRAM zakończone: plików {count}, odczytanych wyników {scores}.",
         "NVRAM scan failed: {error}": "Nie udało się przeskanować NVRAM: {error}",

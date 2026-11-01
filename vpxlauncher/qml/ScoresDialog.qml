@@ -29,6 +29,20 @@ Popup {
         return root.tr("Could not read NVRAM file") + ": " + record.error
     }
 
+    function groupRecords(records) {
+        const groups = []
+        for (let i = 0; i < records.length; i++) {
+            const record = records[i]
+            let group = groups.length > 0 ? groups[groups.length - 1] : null
+            if (!group || group.rom !== record.rom) {
+                group = { title: record.title, rom: record.rom, records: [] }
+                groups.push(group)
+            }
+            group.records.push(record)
+        }
+        return groups
+    }
+
     background: Rectangle {
         radius: 12
         color: theme.surface
@@ -69,77 +83,79 @@ Popup {
             }
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            height: 34
-            color: theme.raised
-            radius: 5
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                Text {
-                    Layout.fillWidth: true
-                    text: root.tr("ROM")
-                    color: theme.muted
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                }
-                Text {
-                    width: 150
-                    horizontalAlignment: Text.AlignRight
-                    text: root.tr("Best score")
-                    color: theme.muted
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                }
-            }
-        }
-
         ListView {
             id: scoreList
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            model: backend.scoreRecords
-            spacing: 2
+            model: root.groupRecords(backend.scoreRecords)
+            spacing: 8
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
             delegate: Rectangle {
                 required property var modelData
                 width: scoreList.width
-                height: 48
-                radius: 5
-                color: index % 2 === 0 ? theme.surface : theme.raised
+                height: 46 + modelData.records.length * 36
+                radius: 8
+                color: theme.raised
+                border.width: 1
+                border.color: theme.line
 
-                RowLayout {
+                Column {
                     anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    spacing: 12
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
+                    anchors.margins: 8
+                    spacing: 2
+
+                    RowLayout {
+                        width: parent.width
+                        height: 30
                         Text {
+                            Layout.fillWidth: true
                             text: modelData.title
                             color: theme.text
-                            font.pixelSize: 13
+                            font.pixelSize: 14
+                            font.weight: Font.DemiBold
                             elide: Text.ElideRight
                         }
                         Text {
-                            text: root.recordStatus(modelData) + "  (" + modelData.rom + ")"
-                            color: modelData.status === "score" ? theme.lamp : theme.muted
+                            text: modelData.rom
+                            color: theme.muted
                             font.pixelSize: 11
-                            elide: Text.ElideRight
                         }
                     }
-                    Text {
-                        width: 150
-                        horizontalAlignment: Text.AlignRight
-                        text: modelData.scoreText || "—"
-                        color: modelData.status === "score" ? theme.text : theme.muted
-                        font.pixelSize: 14
-                        font.weight: modelData.status === "score" ? Font.DemiBold : Font.Normal
+
+                    Repeater {
+                        model: modelData.records
+                        delegate: Rectangle {
+                            required property var modelData
+                            required property int index
+                            width: parent.width
+                            height: 34
+                            radius: 4
+                            color: index % 2 === 0 ? theme.surface : theme.bg
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 12
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: root.recordStatus(modelData)
+                                    color: modelData.status === "score" ? theme.lamp : theme.muted
+                                    font.pixelSize: 12
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    width: 150
+                                    horizontalAlignment: Text.AlignRight
+                                    text: modelData.scoreText || "—"
+                                    color: modelData.status === "score" ? theme.text : theme.muted
+                                    font.pixelSize: 14
+                                    font.weight: modelData.status === "score" ? Font.DemiBold : Font.Normal
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -169,7 +185,7 @@ Popup {
             Layout.fillWidth: true
             Text {
                 Layout.fillWidth: true
-                text: root.tr("Only known NVRAM layouts are decoded; other files are listed as unsupported.")
+                text: root.tr("Only the first five entries in known NVRAM layouts are decoded; other files are listed as unsupported.")
                 color: theme.muted
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
