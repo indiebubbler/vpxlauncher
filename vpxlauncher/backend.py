@@ -327,6 +327,26 @@ class Backend(QObject):
         else:
             self._model.update_row(self._lib.get(table_id))
 
+    @Slot(int, str)
+    def renameTable(self, table_id: int, name: str) -> None:
+        name = name.strip()
+        if not name:
+            self._set_status(self._text("Table name cannot be empty."))
+            return
+        row = self._lib.get(table_id)
+        if row is None:
+            self._set_status(self._text("This table is no longer in the library."))
+            return
+        if row["name"] == name:
+            return
+        self._lib.rename_table(table_id, name)
+        self._reload()
+        updated = self._lib.get(table_id)
+        if updated and not updated["artwork"] and self._settings.auto_artwork:
+            self._start_art([updated])
+        else:
+            self._set_status(self._text("Renamed table to: {name}.", name=name))
+
     @Slot(int)
     def removeTable(self, table_id: int) -> None:
         row = self._lib.get(table_id)

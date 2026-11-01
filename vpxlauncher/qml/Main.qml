@@ -231,6 +231,7 @@ ApplicationWindow {
             onImageDropped: (urls) => backend.setArtworkFromDrop(tableId, urls)
             onContextRequested: {
                 cardMenu.tableId = tableId
+                cardMenu.tableName = title
                 cardMenu.isFavorite = favorite
                 cardMenu.popup()
             }
@@ -356,6 +357,7 @@ ApplicationWindow {
     Menu {
         id: cardMenu
         property int tableId: -1
+        property string tableName: ""
         property bool isFavorite: false
         padding: 6
         background: Rectangle {
@@ -366,6 +368,14 @@ ApplicationWindow {
             border.color: theme.line
         }
         AppMenuItem { text: win.tr("Play"); onTriggered: backend.launch(cardMenu.tableId) }
+        AppMenuItem {
+            text: win.tr("Rename table...")
+            onTriggered: {
+                renameDialog.tableId = cardMenu.tableId
+                renameDialog.currentName = cardMenu.tableName
+                renameDialog.open()
+            }
+        }
         AppMenuItem {
             text: cardMenu.isFavorite ? win.tr("Remove from favorites") : win.tr("Add to favorites")
             onTriggered: backend.toggleFavorite(cardMenu.tableId)
@@ -400,6 +410,65 @@ ApplicationWindow {
         title: win.tr("Choose table artwork")
         nameFilters: [win.tr("Images (*.png *.jpg *.jpeg *.webp)")]
         onAccepted: backend.setArtwork(targetId, selectedFile)
+    }
+
+    Popup {
+        id: renameDialog
+        property int tableId: -1
+        property string currentName: ""
+        modal: true
+        focus: true
+        padding: 20
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(480, (parent ? parent.width : 520) - 48)
+        closePolicy: Popup.CloseOnEscape
+
+        background: Rectangle {
+            radius: 12
+            color: theme.surface
+            border.width: 1
+            border.color: theme.line
+        }
+        Overlay.modal: Rectangle { color: "#b3070b12" }
+
+        onOpened: {
+            renameField.text = currentName
+            renameField.selectAll()
+            renameField.forceActiveFocus()
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 12
+
+            Text {
+                text: win.tr("Rename table")
+                color: theme.text
+                font.pixelSize: 20
+                font.weight: Font.DemiBold
+            }
+            AppTextField {
+                id: renameField
+                Layout.fillWidth: true
+                placeholderText: win.tr("Table name")
+                onAccepted: {
+                    backend.renameTable(renameDialog.tableId, text)
+                    renameDialog.close()
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                AppButton { text: win.tr("Cancel"); onClicked: renameDialog.close() }
+                AppButton {
+                    text: win.tr("Save")
+                    accent: true
+                    onClicked: {
+                        backend.renameTable(renameDialog.tableId, renameField.text)
+                        renameDialog.close()
+                    }
+                }
+            }
+        }
     }
 
     Popup {

@@ -109,6 +109,14 @@ class Library:
         self.db.execute("UPDATE tables SET artwork = ? WHERE id = ?", (path, table_id))
         self.db.commit()
 
+    def rename_table(self, table_id: int, name: str) -> bool:
+        cur = self.db.execute(
+            "UPDATE tables SET name = ?, art_tried = CASE WHEN artwork = '' THEN 0 ELSE art_tried END WHERE id = ?",
+            (name, table_id),
+        )
+        self.db.commit()
+        return cur.rowcount > 0
+
     def missing_artwork(self, only_untried: bool) -> list[dict]:
         """Stoły bez grafiki; only_untried pomija te, dla których już próbowano pobrać obraz."""
         sql = "SELECT * FROM tables WHERE missing = 0 AND removed = 0 AND artwork = ''"

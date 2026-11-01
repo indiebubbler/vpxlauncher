@@ -71,6 +71,23 @@ class RemovedTablesTests(unittest.TestCase):
         self.assertEqual(lib.count(), 1)
         self.assertEqual(lib.restore_removed(), 0)
 
+    def test_renamed_table_keeps_name_on_rescan_and_is_searchable(self):
+        from vpxlauncher.scanner import build_item, scan_directories
+
+        lib = self._lib()
+        item = build_item(self.tables / "A.vpx")
+        lib.upsert(item)
+        table_id = lib.list_tables()[0]["id"]
+
+        self.assertTrue(lib.rename_table(table_id, "AC/DC"))
+        self.assertEqual(lib.list_tables(query="AC/DC")[0]["name"], "AC/DC")
+        self.assertEqual(lib.list_tables(query="Table A"), [])
+
+        for scanned_item in scan_directories([str(self.tables)]):
+            lib.upsert(scanned_item)
+        lib.commit()
+        self.assertEqual(lib.get(table_id)["name"], "AC/DC")
+
     def test_old_database_gets_removed_column(self):
         from vpxlauncher.library import Library
 
