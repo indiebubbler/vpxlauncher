@@ -23,6 +23,7 @@ from . import config, displays, i18n, vps
 from .library import Library
 from .models import TableModel
 from .scanner import IMAGE_EXTS, VPX_EXT, build_item, norm, scan_directories
+from .scores import scan_nvram_directory
 
 LOG_MAX_BYTES = 512 * 1024
 
@@ -55,6 +56,8 @@ class Backend(QObject):
     _artCandidatesLoaded = Signal(int, list, str)
     _artChoiceDone = Signal(int, str, str, str, str)
     _titleRefreshDone = Signal(list, int, str)
+    scoresChanged = Signal()
+    _scoreScanDone = Signal(list, str)
 
     def __init__(self, library: Library, settings: config.Settings, model: TableModel, parent=None):
         super().__init__(parent)
@@ -80,12 +83,17 @@ class Backend(QObject):
         self._art_candidate_table_id = -1
         self._art_candidates: list[dict] = []
         self._art_candidate_urls: list[str] = []
+        self._score_records: list[dict] = []
+        self._score_scan_error = ""
+        self._score_scan_status = ""
+        self._score_scanning = False
         self._scanDone.connect(self._on_scan_done)
         self._artResult.connect(self._on_art_result)
         self._artDone.connect(self._on_art_done)
         self._artCandidatesLoaded.connect(self._on_art_candidates_loaded)
         self._artChoiceDone.connect(self._on_art_choice_done)
         self._titleRefreshDone.connect(self._on_title_refresh_done)
+        self._scoreScanDone.connect(self._on_score_scan_done)
         app = QGuiApplication.instance()
         if app is not None:  # podłączenie/odłączenie monitora odświeża listę wyboru
             app.screenAdded.connect(lambda *_: self.monitorsChanged.emit())
@@ -132,6 +140,28 @@ class Backend(QObject):
     @Property(str, notify=settingsChanged)
     def settingsLogPath(self):
         return self._settings.log_path
+
+    @Property(str, notify=settingsChanged)
+    def settingsNvramDir(self):
+        return self._settings.nvram_dir
+
+    @Property(list, notify=scoresChanged)
+    def scoreRecords(self):
+        return self._score_records
+
+    @Property(bool, notify=scoresChanged)
+    def scoreScanning(self):
+        return self._score_scanning
+
+    @Property(str, notify=scoresChanged)
+    def scoreScanStatus(self):
+        if self._score_scan_error:
+            return self._text("NVRAM scan failed: {error}", error=self._score_scan_error)
+        return self._score_scan_status
+
+    @Property(bool, notify=scoresChanged)
+    def scoreScanFailed(self):
+        return bool(self._score_scan_error)
 
     @Property(bool, notify=settingsChanged)
     def settingsAutoArt(self):
@@ -381,6 +411,55 @@ class Backend(QObject):
             self._text("Restored removed tables: {count}.", count=count)
             if count else self._text("There are no removed tables to restore.")
         )
+
+    @Slot()
+    def scanScores(self) -> None:
+        if self._score_scanning:
+            return
+        self._score_scanning = True
+        self._score_scan_error = ""
+        self._score_scan_status = self._text("Scanning NVRAM files...")
+        self.scoresChanged.emit()
+        threading.Thread(
+            target=self._score_scan_worker,
+            args=(self._settings.nvram_dir,),
+            daemon=True,
+        ).start()
+
+    def _score_scan_worker(self, directory: str) -> None:
+        try:
+            records = scan_nvram_directory(directory)
+            error = ""
+        except (OSError, ValueError) as exc:
+            records = []
+            error = str(exc)
+        self._scoreScanDone.emit(records, error)
+
+    @Slot(list, str)
+    def _on_score_scan_done(self, records: list, error: str) -> None:
+        self._score_records = records
+        self._score_scan_error = error
+        self._score_scanning = False
+        if error:
+            self._score_scan_status = ""
+        else:
+            decoded = sum(record["status"] == "score" for record in records)
+            self._score_scan_status = self._text(
+                "NVRAM scan complete: {count} files, {scores} scores decoded.",
+                count=len(records),
+                scores=decoded,
+            )
+        self.scoresChanged.emit()
+
+    @Slot(str)
+    def setNvramDirectory(self, directory: str) -> None:
+        directory = directory.strip()
+        if not directory:
+            return
+        self._settings.nvram_dir = norm(directory)
+        self._settings.save()
+        self.settingsChanged.emit()
+        self.scanScores()
 
     @Slot(int)
     def setTileSize(self, index: int) -> None:

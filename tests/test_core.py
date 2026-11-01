@@ -74,16 +74,19 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(s.table_dirs, [str(exe_dir)])
             self.assertTrue(s.prime_run)
             self.assertEqual(s.env, {"SDL_VIDEODRIVER": "x11"})
+            self.assertEqual(s.nvram_dir, str(self.home / ".pinmame" / "nvram"))
         s.extra_args = "-minimized"
         s.language = "pl"
         s.graphics_backend = "Vulkan"
         s.cheat = True
+        s.nvram_dir = str(self.home / ".pinmame" / "nvram")
         s.prime_run = False
         s.save()
         self.assertEqual(config.Settings.load().extra_args, "-minimized")
         self.assertEqual(config.Settings.load().language, "pl")
         self.assertEqual(config.Settings.load().graphics_backend, "Vulkan")
         self.assertTrue(config.Settings.load().cheat)
+        self.assertEqual(config.Settings.load().nvram_dir, str(self.home / ".pinmame" / "nvram"))
         self.assertFalse(config.Settings.load().prime_run)
 
     def test_env_and_args_parsing(self):

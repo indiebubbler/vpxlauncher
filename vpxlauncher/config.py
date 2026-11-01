@@ -48,6 +48,13 @@ def default_log_path() -> Path:
     return base / "10.8" / "vpinball.log"
 
 
+def default_nvram_dir() -> Path:
+    if IS_WINDOWS:
+        base = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
+        return base / "VPinMAME" / "nvram"
+    return Path.home() / ".pinmame" / "nvram"
+
+
 def graphics_backend_options() -> tuple[str, ...]:
     if IS_WINDOWS:
         return ("Default", "Direct3D11", "Direct3D12", "OpenGL", "Vulkan")
@@ -95,6 +102,7 @@ class Settings:
     language: str = "en"
     graphics_backend: str = "Default"
     cheat: bool = False
+    nvram_dir: str = field(default_factory=lambda: str(default_nvram_dir()))
 
     @staticmethod
     def path() -> Path:
@@ -155,6 +163,7 @@ class Settings:
             graphics_backend if graphics_backend in graphics_backend_options() else "Default"
         )
         s.cheat = bool(data.get("cheat", False))
+        s.nvram_dir = str(data.get("nvram_dir") or default_nvram_dir())
         return s
 
     def save(self) -> None:
@@ -174,5 +183,6 @@ class Settings:
             "language": self.language,
             "graphics_backend": self.graphics_backend,
             "cheat": self.cheat,
+            "nvram_dir": self.nvram_dir,
         }
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), "utf-8")

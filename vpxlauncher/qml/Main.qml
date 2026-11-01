@@ -57,6 +57,8 @@ ApplicationWindow {
         function onArtCandidatesReady() { artCandidatesDialog.open() }
     }
 
+    ScoresDialog { id: scoresDialog }
+
     // Upuszczenie plików .vpx lub folderów w dowolnym miejscu okna dodaje je do biblioteki.
     DropArea {
         anchors.fill: parent
@@ -284,6 +286,10 @@ ApplicationWindow {
             color: theme.raised
             border.width: 1
             border.color: theme.line
+        }
+        AppMenuItem {
+            text: win.tr("PinMAME high scores")
+            onTriggered: scoresDialog.open()
         }
         AppMenuItem { text: win.tr("Scan folders"); enabled: !backend.scanning; onTriggered: backend.scan() }
         AppMenuItem { text: win.tr("Add table..."); onTriggered: addDialog.open() }
