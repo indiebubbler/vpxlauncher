@@ -19,7 +19,7 @@ Popup {
 
     function recordStatus(record) {
         if (record.status === "score")
-            return root.tr("Score found")
+            return record.label + (record.initials ? " · " + record.initials : "")
         if (record.status === "empty")
             return root.tr("No high score stored")
         if (record.status === "unsupported")
@@ -121,13 +121,13 @@ Popup {
                         Layout.fillWidth: true
                         spacing: 2
                         Text {
-                            text: modelData.rom
+                            text: modelData.title
                             color: theme.text
                             font.pixelSize: 13
                             elide: Text.ElideRight
                         }
                         Text {
-                            text: root.recordStatus(modelData)
+                            text: root.recordStatus(modelData) + "  (" + modelData.rom + ")"
                             color: modelData.status === "score" ? theme.lamp : theme.muted
                             font.pixelSize: 11
                             elide: Text.ElideRight

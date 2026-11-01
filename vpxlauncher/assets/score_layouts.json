@@ -1,0 +1,213 @@
+{
+  "_source": "https://github.com/tomlogic/pinball-memory-maps",
+  "_license": "ODbL-1.0",
+  "_contents_license": "DBCL-1.0",
+  "roms": {
+    "acd_170h": {
+      "title": "AC/DC Limited Edition",
+      "byteorder": "little",
+      "records": [
+        {"label": "Grand Champion", "score": 14356, "length": 8, "encoding": "int", "initials": 14332, "initials_length": 11, "null_terminated": true},
+        {"label": "First Place", "score": 14392, "length": 8, "encoding": "int", "initials": 14368, "initials_length": 11, "null_terminated": true},
+        {"label": "Second Place", "score": 14428, "length": 8, "encoding": "int", "initials": 14404, "initials_length": 11, "null_terminated": true},
+        {"label": "Third Place", "score": 14464, "length": 8, "encoding": "int", "initials": 14440, "initials_length": 11, "null_terminated": true},
+        {"label": "Fourth Place", "score": 14500, "length": 8, "encoding": "int", "initials": 14476, "initials_length": 11, "null_terminated": true}
+      ]
+    },
+    "acd_170c": {
+      "title": "AC/DC (Colored MOD)",
+      "_note": "Uses acd_170h offsets, verified against this ROM's supplied NVRAM.",
+      "byteorder": "little",
+      "records": [
+        {"label": "Grand Champion", "score": 14356, "length": 8, "encoding": "int", "initials": 14332, "initials_length": 11, "null_terminated": true},
+        {"label": "First Place", "score": 14392, "length": 8, "encoding": "int", "initials": 14368, "initials_length": 11, "null_terminated": true},
+        {"label": "Second Place", "score": 14428, "length": 8, "encoding": "int", "initials": 14404, "initials_length": 11, "null_terminated": true},
+        {"label": "Third Place", "score": 14464, "length": 8, "encoding": "int", "initials": 14440, "initials_length": 11, "null_terminated": true},
+        {"label": "Fourth Place", "score": 14500, "length": 8, "encoding": "int", "initials": 14476, "initials_length": 11, "null_terminated": true}
+      ]
+    },
+    "tom_14hb": {
+      "title": "Theatre of Magic",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7302, "length": 5, "encoding": "bcd", "initials": 7299, "initials_length": 3},
+        {"label": "First Place", "score": 7268, "length": 5, "encoding": "bcd", "initials": 7265, "initials_length": 3},
+        {"label": "Second Place", "score": 7276, "length": 5, "encoding": "bcd", "initials": 7273, "initials_length": 3},
+        {"label": "Third Place", "score": 7284, "length": 5, "encoding": "bcd", "initials": 7281, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7292, "length": 5, "encoding": "bcd", "initials": 7289, "initials_length": 3}
+      ]
+    },
+    "centaur": {
+      "title": "Centaur",
+      "byteorder": "little",
+      "nibble": "high",
+      "records": [
+        {"label": "High Score", "score": 166, "length": 7, "encoding": "bcd"}
+      ]
+    },
+    "taf_l7": {
+      "title": "The Addams Family",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7302, "length": 5, "encoding": "bcd", "initials": 7299, "initials_length": 3},
+        {"label": "First Place", "score": 7268, "length": 5, "encoding": "bcd", "initials": 7265, "initials_length": 3},
+        {"label": "Second Place", "score": 7276, "length": 5, "encoding": "bcd", "initials": 7273, "initials_length": 3},
+        {"label": "Third Place", "score": 7284, "length": 5, "encoding": "bcd", "initials": 7281, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7292, "length": 5, "encoding": "bcd", "initials": 7289, "initials_length": 3}
+      ]
+    },
+    "t2_l8": {
+      "title": "Terminator 2: Judgment Day",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7302, "length": 5, "encoding": "bcd", "initials": 7299, "initials_length": 3},
+        {"label": "First Place", "score": 7268, "length": 5, "encoding": "bcd", "initials": 7265, "initials_length": 3},
+        {"label": "Second Place", "score": 7276, "length": 5, "encoding": "bcd", "initials": 7273, "initials_length": 3},
+        {"label": "Third Place", "score": 7284, "length": 5, "encoding": "bcd", "initials": 7281, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7292, "length": 5, "encoding": "bcd", "initials": 7289, "initials_length": 3}
+      ]
+    },
+    "mb_106b": {
+      "title": "Monster Bash",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7352, "length": 5, "encoding": "bcd", "initials": 7349, "initials_length": 3},
+        {"label": "First Place", "score": 7318, "length": 5, "encoding": "bcd", "initials": 7315, "initials_length": 3},
+        {"label": "Second Place", "score": 7326, "length": 5, "encoding": "bcd", "initials": 7323, "initials_length": 3},
+        {"label": "Third Place", "score": 7334, "length": 5, "encoding": "bcd", "initials": 7331, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7342, "length": 5, "encoding": "bcd", "initials": 7339, "initials_length": 3}
+      ]
+    },
+    "cv_20h": {
+      "title": "Cirqus Voltaire",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7608, "length": 5, "encoding": "bcd", "initials": 7605, "initials_length": 3},
+        {"label": "First Place", "score": 7574, "length": 5, "encoding": "bcd", "initials": 7571, "initials_length": 3},
+        {"label": "Second Place", "score": 7582, "length": 5, "encoding": "bcd", "initials": 7579, "initials_length": 3},
+        {"label": "Third Place", "score": 7590, "length": 5, "encoding": "bcd", "initials": 7587, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7598, "length": 5, "encoding": "bcd", "initials": 7595, "initials_length": 3}
+      ]
+    },
+    "ij_l7": {
+      "title": "Indiana Jones: The Pinball Adventure",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7581, "length": 5, "encoding": "bcd", "initials": 7578, "initials_length": 3},
+        {"label": "First Place", "score": 7547, "length": 5, "encoding": "bcd", "initials": 7544, "initials_length": 3},
+        {"label": "Second Place", "score": 7555, "length": 5, "encoding": "bcd", "initials": 7552, "initials_length": 3},
+        {"label": "Third Place", "score": 7563, "length": 5, "encoding": "bcd", "initials": 7560, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7571, "length": 5, "encoding": "bcd", "initials": 7568, "initials_length": 3}
+      ]
+    },
+    "godzilla": {
+      "title": "Godzilla",
+      "byteorder": "big",
+      "records": [
+        {"label": "First", "score": 5264, "length": 5, "encoding": "bcd", "initials": 5346, "initials_length": 10},
+        {"label": "Second", "score": 5269, "length": 5, "encoding": "bcd", "initials": 5356, "initials_length": 10},
+        {"label": "Third", "score": 5274, "length": 5, "encoding": "bcd", "initials": 5366, "initials_length": 10},
+        {"label": "Fourth", "score": 5279, "length": 5, "encoding": "bcd", "initials": 5376, "initials_length": 10},
+        {"label": "Fifth", "score": 5284, "length": 5, "encoding": "bcd", "initials": 5386, "initials_length": 10},
+        {"label": "Sixth", "score": 5289, "length": 5, "encoding": "bcd", "initials": 5396, "initials_length": 10},
+        {"label": "Seventh", "score": 5294, "length": 5, "encoding": "bcd", "initials": 5406, "initials_length": 10},
+        {"label": "Eighth", "score": 5299, "length": 5, "encoding": "bcd", "initials": 5416, "initials_length": 10},
+        {"label": "Ninth", "score": 5304, "length": 5, "encoding": "bcd", "initials": 5426, "initials_length": 10},
+        {"label": "Tenth", "score": 5309, "length": 5, "encoding": "bcd", "initials": 5436, "initials_length": 10}
+      ]
+    },
+    "tz_94h": {
+      "title": "Twilight Zone",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7564, "length": 6, "encoding": "bcd", "initials": 7561, "initials_length": 3},
+        {"label": "First Place", "score": 7526, "length": 6, "encoding": "bcd", "initials": 7523, "initials_length": 3},
+        {"label": "Second Place", "score": 7535, "length": 6, "encoding": "bcd", "initials": 7532, "initials_length": 3},
+        {"label": "Third Place", "score": 7544, "length": 6, "encoding": "bcd", "initials": 7541, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7553, "length": 6, "encoding": "bcd", "initials": 7550, "initials_length": 3}
+      ]
+    },
+    "ft_l5": {
+      "title": "Fish Tales",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7302, "length": 5, "encoding": "bcd", "initials": 7299, "initials_length": 3},
+        {"label": "First Place", "score": 7268, "length": 5, "encoding": "bcd", "initials": 7265, "initials_length": 3},
+        {"label": "Second Place", "score": 7276, "length": 5, "encoding": "bcd", "initials": 7273, "initials_length": 3},
+        {"label": "Third Place", "score": 7284, "length": 5, "encoding": "bcd", "initials": 7281, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7292, "length": 5, "encoding": "bcd", "initials": 7289, "initials_length": 3}
+      ]
+    },
+    "lotr": {
+      "title": "The Lord of the Rings",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 5596, "length": 5, "encoding": "bcd", "initials": 5661, "initials_length": 10},
+        {"label": "#1", "score": 5601, "length": 5, "encoding": "bcd", "initials": 5671, "initials_length": 10},
+        {"label": "#2", "score": 5606, "length": 5, "encoding": "bcd", "initials": 5681, "initials_length": 10},
+        {"label": "#3", "score": 5611, "length": 5, "encoding": "bcd", "initials": 5691, "initials_length": 10},
+        {"label": "#4", "score": 5616, "length": 5, "encoding": "bcd", "initials": 5701, "initials_length": 10}
+      ]
+    },
+    "afm_113b": {
+      "title": "Attack from Mars",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7476, "length": 6, "encoding": "bcd", "initials": 7473, "initials_length": 3},
+        {"label": "First Place", "score": 7438, "length": 6, "encoding": "bcd", "initials": 7435, "initials_length": 3},
+        {"label": "Second Place", "score": 7447, "length": 6, "encoding": "bcd", "initials": 7444, "initials_length": 3},
+        {"label": "Third Place", "score": 7456, "length": 6, "encoding": "bcd", "initials": 7453, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7465, "length": 6, "encoding": "bcd", "initials": 7462, "initials_length": 3},
+        {"label": "Buy-In Score #1", "score": 8051, "length": 6, "encoding": "bcd", "initials": 8048, "initials_length": 3},
+        {"label": "Buy-In Score #2", "score": 8060, "length": 6, "encoding": "bcd", "initials": 8057, "initials_length": 3},
+        {"label": "Buy-In Score #3", "score": 8069, "length": 6, "encoding": "bcd", "initials": 8066, "initials_length": 3},
+        {"label": "Buy-In Score #4", "score": 8078, "length": 6, "encoding": "bcd", "initials": 8075, "initials_length": 3}
+      ]
+    },
+    "genesis": {
+      "title": "Genesis",
+      "byteorder": "big",
+      "nibble": "low",
+      "records": [
+        {"label": "High Score #1", "score": 183, "length": 7, "encoding": "bcd", "initials": 177, "initials_length": 6},
+        {"label": "High Score #2", "score": 196, "length": 7, "encoding": "bcd", "initials": 190, "initials_length": 6},
+        {"label": "High Score #3", "score": 209, "length": 7, "encoding": "bcd", "initials": 203, "initials_length": 6},
+        {"label": "High Score #4", "score": 222, "length": 7, "encoding": "bcd", "initials": 216, "initials_length": 6},
+        {"label": "High Score #5", "score": 235, "length": 7, "encoding": "bcd", "initials": 229, "initials_length": 6}
+      ]
+    },
+    "mtl_180h": {
+      "title": "Metallica Limited Edition",
+      "byteorder": "little",
+      "records": [
+        {"label": "Grand Champion", "score": 14140, "length": 8, "encoding": "int", "initials": 14116, "initials_length": 11, "null_terminated": true},
+        {"label": "First Place", "score": 14176, "length": 8, "encoding": "int", "initials": 14152, "initials_length": 11, "null_terminated": true},
+        {"label": "Second Place", "score": 14212, "length": 8, "encoding": "int", "initials": 14188, "initials_length": 11, "null_terminated": true},
+        {"label": "Third Place", "score": 14248, "length": 8, "encoding": "int", "initials": 14224, "initials_length": 11, "null_terminated": true},
+        {"label": "Fourth Place", "score": 14284, "length": 8, "encoding": "int", "initials": 14260, "initials_length": 11, "null_terminated": true}
+      ]
+    },
+    "totan_14": {
+      "title": "Tales of the Arabian Nights",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7560, "length": 6, "encoding": "bcd", "initials": 7557, "initials_length": 3},
+        {"label": "1st", "score": 7522, "length": 6, "encoding": "bcd", "initials": 7519, "initials_length": 3},
+        {"label": "2nd", "score": 7531, "length": 6, "encoding": "bcd", "initials": 7528, "initials_length": 3},
+        {"label": "3rd", "score": 7540, "length": 6, "encoding": "bcd", "initials": 7537, "initials_length": 3},
+        {"label": "4th", "score": 7549, "length": 6, "encoding": "bcd", "initials": 7546, "initials_length": 3}
+      ]
+    },
+    "mm_109b": {
+      "title": "Medieval Madness",
+      "byteorder": "big",
+      "records": [
+        {"label": "Grand Champion", "score": 7502, "length": 5, "encoding": "bcd", "initials": 7499, "initials_length": 3},
+        {"label": "First Place", "score": 7468, "length": 5, "encoding": "bcd", "initials": 7465, "initials_length": 3},
+        {"label": "Second Place", "score": 7476, "length": 5, "encoding": "bcd", "initials": 7473, "initials_length": 3},
+        {"label": "Third Place", "score": 7484, "length": 5, "encoding": "bcd", "initials": 7481, "initials_length": 3},
+        {"label": "Fourth Place", "score": 7492, "length": 5, "encoding": "bcd", "initials": 7489, "initials_length": 3}
+      ]
+    }
+  }
+}
