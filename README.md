@@ -19,6 +19,7 @@ On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPin
 
 - **Play**: double-click a tile, press Enter, or click the amber button that appears when you hover over a tile.
 - Right-click a tile and choose **Rename table...** to set a library-only display name. The `.vpx` filename and file path stay unchanged; artwork searches use the renamed title.
+- In the same dialog, edit **Additional info**. Use **Library → Update table names from VPS** to automatically match existing tables and normalize their titles without downloading or replacing artwork.
 - **Library → Scan folders** scans the folders configured in Settings, including subfolders. Use **Add table...** or drop `.vpx` files or folders onto the window to add tables manually.
 - **Artwork** is downloaded automatically from the Virtual Pinball Spreadsheet database (see below). Add your own by dropping an image onto a tile or right-clicking and choosing *Choose artwork...*; manual artwork takes precedence. An image next to a table with the same base name (for example, `Table.vpx` and `Table.png`) is detected automatically.
 - Right-click a tile to manage favorites and artwork, *Find artwork online* (replaces the current image), or remove the artwork or table from the library. Removing a table does not delete its file from disk.

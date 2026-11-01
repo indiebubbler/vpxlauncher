@@ -54,6 +54,7 @@ class Backend(QObject):
     _artDone = Signal(str)
     _artCandidatesLoaded = Signal(int, list, str)
     _artChoiceDone = Signal(int, str, str, str, str)
+    _titleRefreshDone = Signal(list, int, str)
 
     def __init__(self, library: Library, settings: config.Settings, model: TableModel, parent=None):
         super().__init__(parent)
@@ -84,6 +85,7 @@ class Backend(QObject):
         self._artDone.connect(self._on_art_done)
         self._artCandidatesLoaded.connect(self._on_art_candidates_loaded)
         self._artChoiceDone.connect(self._on_art_choice_done)
+        self._titleRefreshDone.connect(self._on_title_refresh_done)
         app = QGuiApplication.instance()
         if app is not None:  # podłączenie/odłączenie monitora odświeża listę wyboru
             app.screenAdded.connect(lambda *_: self.monitorsChanged.emit())
@@ -341,11 +343,20 @@ class Backend(QObject):
             return
         self._lib.rename_table(table_id, name)
         self._reload()
-        updated = self._lib.get(table_id)
-        if updated and not updated["artwork"] and self._settings.auto_artwork:
-            self._start_art([updated])
-        else:
-            self._set_status(self._text("Renamed table to: {name}.", name=name))
+        self._set_status(self._text("Renamed table to: {name}.", name=name))
+
+    @Slot(int, str, str, result=bool)
+    def saveTableDetails(self, table_id: int, name: str, additional_info: str) -> bool:
+        name = name.strip()
+        if not name:
+            self._set_status(self._text("Table name cannot be empty."))
+            return False
+        if not self._lib.set_table_title_and_info(table_id, name, additional_info.strip()):
+            self._set_status(self._text("This table is no longer in the library."))
+            return False
+        self._reload()
+        self._set_status(self._text("Table details saved."))
+        return True
 
     @Slot(int)
     def removeTable(self, table_id: int) -> None:
@@ -536,6 +547,70 @@ class Backend(QObject):
             self._set_status(self._text("All tables already have artwork."))
             return
         self._start_art(rows)
+
+    @Slot()
+    def refreshTableTitles(self) -> None:
+        if self._fetching_art:
+            self._set_status(self._text("Artwork download is already in progress."))
+            return
+        rows = self._lib.list_tables()
+        if not rows:
+            self._set_status(self._text("There are no tables to update."))
+            return
+        jobs = [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "additional_info": row.get("additional_info", ""),
+            }
+            for row in rows
+        ]
+        self._set_fetching_art(True)
+        self._set_status(self._text("Updating table titles: {done}/{total}...", done=0, total=len(jobs)))
+        threading.Thread(target=self._title_refresh_worker, args=(jobs,), daemon=True).start()
+
+    def _title_refresh_worker(self, jobs: list[dict]) -> None:
+        extra = [self._settings.vps_db_url] if self._settings.vps_db_url else []
+        try:
+            index = vps.VpsIndex.load(config.data_dir() / "vps-index.json", extra)
+            updates = []
+            for job in jobs:
+                search_name = " ".join(
+                    part for part in (job["name"], job["additional_info"]) if part
+                )
+                game = index.find(search_name) or index.find(job["name"])
+                if game:
+                    title, additional_info = vps.matched_title_info(search_name, game["name"])
+                    if not additional_info:
+                        additional_info = job["additional_info"]
+                    updates.append((job["id"], title, additional_info))
+            self._titleRefreshDone.emit(updates, len(jobs), "")
+        except Exception as exc:
+            self._titleRefreshDone.emit([], len(jobs), str(exc) or type(exc).__name__)
+
+    @Slot(list, int, str)
+    def _on_title_refresh_done(self, updates: list, total: int, error: str) -> None:
+        self._set_fetching_art(False)
+        if error:
+            self._set_status(self._text("Could not download the VPS database: {error}", error=error))
+            return
+        changed = 0
+        for table_id, title, additional_info in updates:
+            row = self._lib.get(table_id)
+            if row and (
+                row["name"] != title
+                or row.get("additional_info", "") != additional_info
+            ):
+                self._lib.set_table_title_and_info(table_id, title, additional_info)
+                changed += 1
+        self._reload()
+        self._set_status(
+            self._text(
+                "Updated table titles: {updated} of {total}.",
+                updated=changed,
+                total=total,
+            )
+        )
 
     @Slot(int)
     def fetchArtworkFor(self, table_id: int) -> None:

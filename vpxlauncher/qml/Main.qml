@@ -232,6 +232,7 @@ ApplicationWindow {
             onContextRequested: {
                 cardMenu.tableId = tableId
                 cardMenu.tableName = title
+                cardMenu.additionalInfo = additionalInfo
                 cardMenu.isFavorite = favorite
                 cardMenu.popup()
             }
@@ -290,6 +291,11 @@ ApplicationWindow {
             text: win.tr("Download missing artwork")
             enabled: !backend.fetchingArt
             onTriggered: backend.fetchArtwork()
+        }
+        AppMenuItem {
+            text: win.tr("Update table names from VPS")
+            enabled: !backend.fetchingArt && backend.totalTables > 0
+            onTriggered: backend.refreshTableTitles()
         }
         AppMenuItem {
             text: backend.removedCount > 0
@@ -358,6 +364,7 @@ ApplicationWindow {
         id: cardMenu
         property int tableId: -1
         property string tableName: ""
+        property string additionalInfo: ""
         property bool isFavorite: false
         padding: 6
         background: Rectangle {
@@ -373,6 +380,7 @@ ApplicationWindow {
             onTriggered: {
                 renameDialog.tableId = cardMenu.tableId
                 renameDialog.currentName = cardMenu.tableName
+                renameDialog.currentInfo = cardMenu.additionalInfo
                 renameDialog.open()
             }
         }
@@ -416,6 +424,7 @@ ApplicationWindow {
         id: renameDialog
         property int tableId: -1
         property string currentName: ""
+        property string currentInfo: ""
         modal: true
         focus: true
         padding: 20
@@ -433,6 +442,7 @@ ApplicationWindow {
 
         onOpened: {
             renameField.text = currentName
+            infoField.text = currentInfo
             renameField.selectAll()
             renameField.forceActiveFocus()
         }
@@ -441,7 +451,7 @@ ApplicationWindow {
             spacing: 12
 
             Text {
-                text: win.tr("Rename table")
+                text: win.tr("Edit table details")
                 color: theme.text
                 font.pixelSize: 20
                 font.weight: Font.DemiBold
@@ -451,8 +461,17 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 placeholderText: win.tr("Table name")
                 onAccepted: {
-                    backend.renameTable(renameDialog.tableId, text)
-                    renameDialog.close()
+                    if (backend.saveTableDetails(renameDialog.tableId, text, infoField.text))
+                        renameDialog.close()
+                }
+            }
+            AppTextField {
+                id: infoField
+                Layout.fillWidth: true
+                placeholderText: win.tr("Additional info")
+                onAccepted: {
+                    if (backend.saveTableDetails(renameDialog.tableId, renameField.text, text))
+                        renameDialog.close()
                 }
             }
             RowLayout {
@@ -463,8 +482,8 @@ ApplicationWindow {
                     text: win.tr("Save")
                     accent: true
                     onClicked: {
-                        backend.renameTable(renameDialog.tableId, renameField.text)
-                        renameDialog.close()
+                        if (backend.saveTableDetails(renameDialog.tableId, renameField.text, infoField.text))
+                            renameDialog.close()
                     }
                 }
             }
