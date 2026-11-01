@@ -3,6 +3,7 @@
 A modern launcher for Visual Pinball X tables, with an image tile grid, search, favorites, and folder scanning. Built with Python and PySide6 (Qt Quick); runs on Linux and Windows.
 
 The app is in English by default. To switch to Polish, open **Settings** and change **Language**. The language setting is saved between launches.
+The application window and taskbar icon use `vpxlauncher/assets/icon.png`.
 
 ## Getting started
 

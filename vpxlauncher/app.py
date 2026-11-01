@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QUrl
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 
 from . import config
@@ -14,6 +14,7 @@ from .library import Library
 from .models import TableModel
 
 QML_DIR = Path(__file__).resolve().parent / "qml"
+ICON_PATH = Path(__file__).resolve().parent / "assets" / "icon.png"
 
 # Paleta "szyba bekglasu nocą": granat + bursztynowa żarówka (jedyny mocny akcent).
 THEME = {
@@ -32,6 +33,7 @@ def main() -> int:
     app = QGuiApplication(sys.argv)
     app.setApplicationName("VPX Launcher")
     app.setDesktopFileName("vpx-launcher")
+    app.setWindowIcon(QIcon(str(ICON_PATH)))
 
     settings = config.Settings.load()
     library = Library(config.data_dir() / "library.db")
