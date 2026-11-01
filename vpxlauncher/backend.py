@@ -47,9 +47,13 @@ class Backend(QObject):
     settingsChanged = Signal()
     libraryChanged = Signal()
     settingsRequested = Signal()
+    artCandidatesChanged = Signal()
+    artCandidatesReady = Signal()
     _scanDone = Signal(list)
     _artResult = Signal(int, str)
     _artDone = Signal(str)
+    _artCandidatesLoaded = Signal(int, list, str)
+    _artChoiceDone = Signal(int, str, str)
 
     def __init__(self, library: Library, settings: config.Settings, model: TableModel, parent=None):
         super().__init__(parent)
@@ -72,9 +76,14 @@ class Backend(QObject):
         self._art_seen = 0
         self._art_found = 0
         self._art_force: set[int] = set()
+        self._art_candidate_table_id = -1
+        self._art_candidates: list[dict] = []
+        self._art_candidate_urls: list[str] = []
         self._scanDone.connect(self._on_scan_done)
         self._artResult.connect(self._on_art_result)
         self._artDone.connect(self._on_art_done)
+        self._artCandidatesLoaded.connect(self._on_art_candidates_loaded)
+        self._artChoiceDone.connect(self._on_art_choice_done)
         app = QGuiApplication.instance()
         if app is not None:  # podłączenie/odłączenie monitora odświeża listę wyboru
             app.screenAdded.connect(lambda *_: self.monitorsChanged.emit())
@@ -100,6 +109,15 @@ class Backend(QObject):
     @Property(bool, notify=fetchingArtChanged)
     def fetchingArt(self):
         return self._fetching_art
+
+    @Property(list, notify=artCandidatesChanged)
+    def artCandidates(self):
+        return self._art_candidates
+
+    @Property(str, notify=artCandidatesChanged)
+    def artCandidateTableName(self):
+        row = self._lib.get(self._art_candidate_table_id)
+        return row["name"] if row else ""
 
     @Property(int, notify=libraryChanged)
     def removedCount(self):
@@ -489,8 +507,133 @@ class Backend(QObject):
     @Slot(int)
     def fetchArtworkFor(self, table_id: int) -> None:
         row = self._lib.get(table_id)
-        if row:
-            self._start_art([row], force=True)
+        if not row:
+            return
+        if self._fetching_art:
+            self._set_status(self._text("Artwork download is already in progress."))
+            return
+        self._art_candidate_table_id = table_id
+        self._art_candidates = []
+        self._art_candidate_urls = []
+        self.artCandidatesChanged.emit()
+        self._set_fetching_art(True)
+        self._set_status(self._text("Searching artwork candidates for {name}...", name=row["name"]))
+        threading.Thread(
+            target=self._art_candidates_worker,
+            args=(table_id, row["name"]),
+            daemon=True,
+        ).start()
+
+    def _art_candidates_worker(self, table_id: int, name: str) -> None:
+        extra = [self._settings.vps_db_url] if self._settings.vps_db_url else []
+        try:
+            index = vps.VpsIndex.load(config.data_dir() / "vps-index.json", extra)
+            candidates = []
+            for game in index.find_candidates(name, limit=40):
+                url = index.image_url(game, name)
+                if url:
+                    candidates.append({
+                        "name": game["name"],
+                        "details": ", ".join(
+                            part for part in (game["mfr"], str(game["year"]) if game["year"] else "") if part
+                        ),
+                        "url": url,
+                    })
+                    if len(candidates) == 8:
+                        break
+            self._artCandidatesLoaded.emit(table_id, candidates, "")
+        except Exception as exc:
+            self._artCandidatesLoaded.emit(table_id, [], str(exc) or type(exc).__name__)
+
+    @Slot(int, list, str)
+    def _on_art_candidates_loaded(self, table_id: int, candidates: list, error: str) -> None:
+        self._set_fetching_art(False)
+        if table_id != self._art_candidate_table_id:
+            return
+        if error:
+            self._set_status(self._text("Could not download the VPS database: {error}", error=error))
+            return
+        row = self._lib.get(table_id)
+        if not row:
+            self._set_status(self._text("This table is no longer in the library."))
+            return
+        if not candidates:
+            self._set_status(
+                self._text("No artwork candidates found for {name}.", name=row["name"])
+            )
+            return
+        self._art_candidate_urls = [candidate["url"] for candidate in candidates]
+        self._art_candidates = [
+            {"name": candidate["name"], "details": candidate["details"]}
+            for candidate in candidates
+        ]
+        self.artCandidatesChanged.emit()
+        self._set_status(
+            self._text(
+                "Select an artwork match for {name}.",
+                name=row["name"],
+            )
+        )
+        self.artCandidatesReady.emit()
+
+    @Slot(int)
+    def chooseArtworkCandidate(self, candidate_index: int) -> None:
+        if self._fetching_art:
+            self._set_status(self._text("Artwork download is already in progress."))
+            return
+        if not 0 <= candidate_index < len(self._art_candidate_urls):
+            self._set_status(self._text("This artwork candidate is no longer available."))
+            return
+        table_id = self._art_candidate_table_id
+        row = self._lib.get(table_id)
+        if not row:
+            self._set_status(self._text("This table is no longer in the library."))
+            return
+        url = self._art_candidate_urls[candidate_index]
+        self._set_fetching_art(True)
+        self._set_status(self._text("Downloading selected artwork..."))
+        threading.Thread(
+            target=self._art_choice_worker,
+            args=(table_id, url),
+            daemon=True,
+        ).start()
+
+    def _art_choice_worker(self, table_id: int, url: str) -> None:
+        try:
+            data = vps.http_get(url, timeout=30)
+            ext = vps.sniff_image_ext(data)
+            if not ext:
+                raise ValueError("The response is not a supported image.")
+            art_dir = config.artwork_dir()
+            art_dir.mkdir(parents=True, exist_ok=True)
+            dest = art_dir / f"{table_id}-{int(time.time() * 1000)}{ext}"
+            dest.write_bytes(data)
+            self._artChoiceDone.emit(table_id, str(dest), "")
+        except Exception as exc:
+            self._artChoiceDone.emit(table_id, "", str(exc) or type(exc).__name__)
+
+    @Slot(int, str, str)
+    def _on_art_choice_done(self, table_id: int, path: str, error: str) -> None:
+        self._set_fetching_art(False)
+        if error:
+            self._set_status(self._text("Could not download selected artwork: {error}", error=error))
+            return
+        row = self._lib.get(table_id)
+        if row is None:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            self._set_status(self._text("This table is no longer in the library."))
+            return
+        self._drop_managed_artwork(row["artwork"])
+        self._lib.set_artwork(table_id, path)
+        self._lib.mark_art_tried(table_id)
+        self._model.update_row(self._lib.get(table_id))
+        self._art_candidates = []
+        self._art_candidate_urls = []
+        self.artCandidatesChanged.emit()
+        self._set_status(self._text("Set artwork for: {name}.", name=row["name"]))
 
     # ---- log gry -------------------------------------------------------------
     def _log_file(self) -> Path:

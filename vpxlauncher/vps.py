@@ -90,6 +90,16 @@ def title_key(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", s)
 
 
+def _title_tokens(text: str) -> list[str]:
+    text = _strip_accents(text).casefold().replace("&", " and ")
+    tokens = re.findall(r"[a-z0-9]+", text)
+    if tokens and tokens[0] == "the":
+        tokens.pop(0)
+    if tokens and tokens[-1] == "the":
+        tokens.pop()
+    return tokens
+
+
 def parse_stem(stem: str) -> tuple[str, int, str]:
     """'Twilight Zone (Bally 1993) VPW 1.0' -> ('Twilight Zone', 1993, 'Bally')."""
     stem = stem.replace("_", " ")
@@ -151,11 +161,13 @@ class VpsIndex:
     def __init__(self, games: list[dict]):
         self.games = games
         self._by_key: dict[str, list[dict]] = {}
+        self._tokens_by_key: dict[str, list[str]] = {}
         for g in games:
             key = title_key(g["name"])
             if key:
                 self._by_key.setdefault(key, []).append(g)
         self._keys = list(self._by_key)
+        self._tokens_by_key = {key: _title_tokens(self._by_key[key][0]["name"]) for key in self._keys}
 
     @classmethod
     def load(cls, cache_path: Path, extra_urls: list[str] | None = None) -> "VpsIndex":
@@ -187,30 +199,49 @@ class VpsIndex:
                 pass
         raise RuntimeError("; ".join(errors) or "brak dostępnych źródeł")
 
-    def find(self, stem: str) -> dict | None:
+    def _rank_candidates(self, stem: str) -> list[tuple[dict, float]]:
         title, year, mfr = parse_stem(stem)
         key = title_key(title)
         if not key:
-            return None
-        cands: dict[int, tuple[dict, float]] = {id(g): (g, 1.0) for g in self._by_key.get(key, [])}
-        if not cands:
-            for k in difflib.get_close_matches(key, self._keys, n=5, cutoff=0.86):
-                ratio = difflib.SequenceMatcher(None, key, k).ratio()
-                for g in self._by_key[k]:
-                    cands[id(g)] = (g, ratio)
-        best, best_score = None, 0.0
-        for g, base in cands.values():
-            score = base
-            if year and g["year"]:
-                score += 0.1 if year == g["year"] else (-0.15 if abs(year - g["year"]) > 1 else 0.0)
-            if mfr and g["mfr"]:
-                a, b = title_key(mfr), title_key(g["mfr"])
-                if a and b:
-                    score += 0.05 if (a in b or b in a) else -0.05
-            score += min(len(g["tables"]), 10) * 0.001  # remis: lepiej opisany wpis
-            if score > best_score:
-                best, best_score = g, score
-        return best if best_score >= ACCEPT_SCORE else None
+            return []
+        query_tokens = _title_tokens(title)
+        candidate_keys = (
+            [key]
+            if key in self._by_key
+            else difflib.get_close_matches(key, self._keys, n=40, cutoff=0.55)
+        )
+        ranked: list[tuple[dict, float]] = []
+        for candidate_key in candidate_keys:
+            games = self._by_key[candidate_key]
+            candidate_tokens = self._tokens_by_key[candidate_key]
+            base = 1.0 if key == candidate_key else difflib.SequenceMatcher(None, key, candidate_key).ratio()
+            if (
+                len(candidate_tokens) >= 2
+                and len(query_tokens) > len(candidate_tokens)
+                and query_tokens[:len(candidate_tokens)] == candidate_tokens
+            ):
+                base = max(base, 0.91)
+            for g in games:
+                score = base
+                if year and g["year"]:
+                    score += 0.1 if year == g["year"] else (-0.15 if abs(year - g["year"]) > 1 else 0.0)
+                if mfr and g["mfr"]:
+                    a, b = title_key(mfr), title_key(g["mfr"])
+                    if a and b:
+                        score += 0.05 if (a in b or b in a) else -0.05
+                score += min(len(g["tables"]), 10) * 0.001  # remis: lepiej opisany wpis
+                ranked.append((g, score))
+        return sorted(ranked, key=lambda item: item[1], reverse=True)
+
+    def find_candidates(self, stem: str, limit: int = 8) -> list[dict]:
+        """Zwraca najlepsze dopasowania, również gdy nazwa zawiera dodatkowy sufiks."""
+        return [game for game, score in self._rank_candidates(stem) if score >= 0.55][:max(0, limit)]
+
+    def find(self, stem: str) -> dict | None:
+        ranked = self._rank_candidates(stem)
+        if ranked and ranked[0][1] >= ACCEPT_SCORE:
+            return ranked[0][0]
+        return None
 
     @staticmethod
     def image_url(game: dict, stem: str) -> str:

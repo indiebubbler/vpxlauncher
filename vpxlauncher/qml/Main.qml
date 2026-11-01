@@ -54,6 +54,7 @@ ApplicationWindow {
     Connections {
         target: backend
         function onSettingsRequested() { settingsDialog.open() }
+        function onArtCandidatesReady() { artCandidatesDialog.open() }
     }
 
     // Upuszczenie plików .vpx lub folderów w dowolnym miejscu okna dodaje je do biblioteki.
@@ -399,6 +400,107 @@ ApplicationWindow {
         title: win.tr("Choose table artwork")
         nameFilters: [win.tr("Images (*.png *.jpg *.jpeg *.webp)")]
         onAccepted: backend.setArtwork(targetId, selectedFile)
+    }
+
+    Popup {
+        id: artCandidatesDialog
+        modal: true
+        focus: true
+        padding: 20
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(700, (parent ? parent.width : 720) - 48)
+        height: Math.min(560, (parent ? parent.height : 600) - 48)
+        closePolicy: Popup.CloseOnEscape
+
+        background: Rectangle {
+            radius: 12
+            color: theme.surface
+            border.width: 1
+            border.color: theme.line
+        }
+        Overlay.modal: Rectangle { color: "#b3070b12" }
+
+        contentItem: ColumnLayout {
+            spacing: 10
+
+            Text {
+                Layout.fillWidth: true
+                text: win.tr("Choose a VPS match for {name}").replace(
+                          "{name}", backend.artCandidateTableName)
+                color: theme.text
+                font.pixelSize: 20
+                font.weight: Font.DemiBold
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: win.tr("Select the table entry whose artwork should be used.")
+                color: theme.muted
+                font.pixelSize: 13
+                wrapMode: Text.Wrap
+            }
+            ListView {
+                id: artCandidateList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 6
+                model: backend.artCandidates
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                delegate: Rectangle {
+                    id: candidateRow
+                    required property int index
+                    required property var modelData
+                    width: artCandidateList.width
+                    height: 66
+                    radius: 8
+                    color: theme.raised
+                    border.width: 1
+                    border.color: theme.line
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 10
+                        spacing: 12
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 3
+                            Text {
+                                Layout.fillWidth: true
+                                text: candidateRow.modelData.name
+                                color: theme.text
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: candidateRow.modelData.details
+                                color: theme.muted
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                            }
+                        }
+                        AppButton {
+                            text: win.tr("Use this match")
+                            accent: true
+                            onClicked: {
+                                backend.chooseArtworkCandidate(candidateRow.index)
+                                artCandidatesDialog.close()
+                            }
+                        }
+                    }
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                AppButton { text: win.tr("Cancel"); onClicked: artCandidatesDialog.close() }
+            }
+        }
     }
 
     SettingsDialog { id: settingsDialog }

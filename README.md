@@ -33,7 +33,8 @@ On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPin
 
 - After scanning, new tables without artwork are matched against the Virtual Pinball Spreadsheet database and assigned a playfield image (or, if unavailable, a flyer or backglass). Disable this in **Settings**.
 - **Library → Download missing artwork** retries for all tables without an image.
-- Matching is performed locally using the file name (`Title (Manufacturer Year) ...`), manufacturer, year, and minor spelling differences. Edition/version tags and author/designer suffixes are ignored when identifying the title. Uncertain matches are rejected, so some tables may remain without artwork; add an image manually. If multiple playfield images are available, the one whose description best matches the file name (for example, `VPW`) is selected.
+- Matching is performed locally using the file name (`Title (Manufacturer Year) ...`), manufacturer, year, and minor spelling differences. Edition/version tags and author/designer suffixes are ignored when identifying the title; extra title suffixes are also considered (for example, `AC-DC Luci` can match `AC/DC`). To correct a match or choose another VPS entry, right-click a tile and select **Find artwork online**, then choose the desired entry.
+- Automatic downloads choose the best matching playfield image (or, if unavailable, a flyer or backglass). In the manual chooser, entries show the VPS table name, manufacturer, and year.
 - The app only sends requests to download the public database (cached for 7 days in `vps-index.json`) and image URLs. Your file names are not sent. Only HTTPS URLs are allowed; images are validated (PNG/JPG/WebP) and limited to 8 MB.
 - When offline, the launcher uses the last downloaded database. You can specify a custom database URL in the `vps_db_url` key in `settings.json`.
 
@@ -44,7 +45,6 @@ On its first launch on Linux, the launcher looks for `~/Gry/VPinballX_BGFX*/VPin
 
 ## Known limitations
 
-- There is no manual selection among multiple match candidates; matching is fully automatic.
 - The official VPS database URL and live downloads have not been verified; the matching logic is tested with sample data. If the URL changes, set the new one in `vps_db_url`.
 - A tile's name is the `.vpx` file name. The author and version are read from the file (requires `olefile`).
 - Tables removed in an older version, before removal became permanent, will reappear the next time you scan. Remove them again if needed.

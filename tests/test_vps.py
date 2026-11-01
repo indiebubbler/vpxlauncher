@@ -27,6 +27,8 @@ RAW = [
      "tableFiles": [{"tableFormat": "VPX", "imgUrl": "https://img.example/aliens_orig.webp"}]},
     {"name": "Aliens", "manufacturer": "Data East", "year": 1993,
      "tableFiles": [{"tableFormat": "VPX", "imgUrl": "https://img.example/aliens_de.webp"}]},
+    {"name": "AC/DC", "manufacturer": "Stern", "year": 2013,
+     "tableFiles": [{"tableFormat": "VPX", "imgUrl": "https://img.example/acdc.webp"}]},
     {"name": "Cover Only", "manufacturer": "X", "year": 1980, "tableFiles": [], "imgUrl": "https://img.example/cover.webp"},
     {"name": "Broken Img", "year": "n/a", "tableFiles": [{"tableFormat": "VPX", "imgUrl": "https://img.example/undefined_table_1.webp"}]},
     {"nie": "gra"},
@@ -65,6 +67,12 @@ class MatchTests(unittest.TestCase):
 
     def test_small_typo_fuzzy(self):
         self.assertEqual(self.index.find("Twilight Zon (Bally 1993)")["name"], "Twilight Zone")
+
+    def test_title_suffix_matches_base_title_and_lists_candidates(self):
+        self.assertEqual(self.index.find("AC-DC Luci")["name"], "AC/DC")
+        self.assertEqual(self.index.find_candidates("AC-DC Luci")[0]["name"], "AC/DC")
+        aliens = self.index.find_candidates("Aliens")
+        self.assertEqual([game["mfr"] for game in aliens[:2]], ["Original", "Data East"])
 
     def test_image_choice(self):
         tz = self.index.find("Twilight Zone (Bally 1993) VPW")
