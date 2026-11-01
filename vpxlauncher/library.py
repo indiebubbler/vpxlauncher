@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS tables (
     name        TEXT NOT NULL,
     author      TEXT NOT NULL DEFAULT '',
     version     TEXT NOT NULL DEFAULT '',
+    additional_info TEXT NOT NULL DEFAULT '',
     artwork     TEXT NOT NULL DEFAULT '',
     favorite    INTEGER NOT NULL DEFAULT 0,
     play_count  INTEGER NOT NULL DEFAULT 0,
@@ -34,6 +35,8 @@ class Library:
             self.db.execute("ALTER TABLE tables ADD COLUMN art_tried INTEGER NOT NULL DEFAULT 0")
         if "removed" not in columns:  # stoły usunięte przez użytkownika (skan ich nie przywraca)
             self.db.execute("ALTER TABLE tables ADD COLUMN removed INTEGER NOT NULL DEFAULT 0")
+        if "additional_info" not in columns:
+            self.db.execute("ALTER TABLE tables ADD COLUMN additional_info TEXT NOT NULL DEFAULT ''")
         self.db.commit()
 
     def upsert(self, item: dict, restore: bool = False) -> bool:
@@ -82,7 +85,12 @@ class Library:
         rows = [dict(r) for r in self.db.execute("SELECT * FROM tables WHERE missing = 0 AND removed = 0")]
         q = query.strip().casefold()
         if q:
-            rows = [r for r in rows if q in r["name"].casefold() or q in (r["author"] or "").casefold()]
+            rows = [
+                r for r in rows
+                if q in r["name"].casefold()
+                or q in (r["additional_info"] or "").casefold()
+                or q in (r["author"] or "").casefold()
+            ]
         if favorites_only:
             rows = [r for r in rows if r["favorite"]]
         rows.sort(key=lambda r: r["name"].casefold())  # remisy w pozostałych sortowaniach
@@ -113,6 +121,14 @@ class Library:
         cur = self.db.execute(
             "UPDATE tables SET name = ?, art_tried = CASE WHEN artwork = '' THEN 0 ELSE art_tried END WHERE id = ?",
             (name, table_id),
+        )
+        self.db.commit()
+        return cur.rowcount > 0
+
+    def set_table_title_and_info(self, table_id: int, name: str, additional_info: str) -> bool:
+        cur = self.db.execute(
+            "UPDATE tables SET name = ?, additional_info = ? WHERE id = ?",
+            (name, additional_info, table_id),
         )
         self.db.commit()
         return cur.rowcount > 0

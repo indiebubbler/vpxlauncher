@@ -87,6 +87,9 @@ class RemovedTablesTests(unittest.TestCase):
             lib.upsert(scanned_item)
         lib.commit()
         self.assertEqual(lib.get(table_id)["name"], "AC/DC")
+        self.assertTrue(lib.set_table_title_and_info(table_id, "AC/DC", "Luci"))
+        self.assertEqual(lib.get(table_id)["additional_info"], "Luci")
+        self.assertEqual(lib.list_tables(query="Luci")[0]["name"], "AC/DC")
 
     def test_old_database_gets_removed_column(self):
         from vpxlauncher.library import Library

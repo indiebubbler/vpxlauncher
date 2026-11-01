@@ -8,6 +8,7 @@ Item {
     required property int index
     required property int tableId
     required property string title
+    required property string additionalInfo
     required property string author
     required property string artwork
     required property bool favorite
@@ -177,6 +178,14 @@ Item {
                 font.weight: Font.Medium
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
+                elide: Text.ElideRight
+            }
+            Text {
+                width: parent.width
+                visible: text !== ""
+                text: root.tr("Info: {info}").replace("{info}", root.additionalInfo)
+                color: theme.muted
+                font.pixelSize: Math.round(12 * root.k)
                 elide: Text.ElideRight
             }
             Text {

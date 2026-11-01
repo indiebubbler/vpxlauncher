@@ -200,8 +200,8 @@ ApplicationWindow {
         cellWidth: Math.floor(width / columns)
         // Skala czcionek i przycisków rośnie razem z kafelkiem (1.0 do 1.7).
         readonly property real k: Math.min(1.7, Math.max(1.0, (cellWidth - 32) / 200))
-        // 16 px marginesów komórki + 3 x 8 px odstępów + obraz 1:1,2 + blok tekstu (ok. 72 px x skala)
-        cellHeight: Math.round((cellWidth - 32) * 1.2) + 40 + Math.round(72 * k)
+        // 16 px marginesów komórki + 3 x 8 px odstępów + obraz 1:1,2 + blok tekstu
+        cellHeight: Math.round((cellWidth - 32) * 1.2) + 40 + Math.round(90 * k)
 
         WheelHandler {
             acceptedModifiers: Qt.ControlModifier

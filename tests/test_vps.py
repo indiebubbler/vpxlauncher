@@ -71,6 +71,11 @@ class MatchTests(unittest.TestCase):
     def test_title_suffix_matches_base_title_and_lists_candidates(self):
         self.assertEqual(self.index.find("AC-DC Luci")["name"], "AC/DC")
         self.assertEqual(self.index.find_candidates("AC-DC Luci")[0]["name"], "AC/DC")
+        self.assertEqual(vps.matched_title_info("AC-DC Luci", "AC/DC"), ("AC/DC", "Luci"))
+        self.assertEqual(
+            vps.matched_title_info("The Addams Family (Bally 1992) VPW", "The Addams Family"),
+            ("The Addams Family", ""),
+        )
         aliens = self.index.find_candidates("Aliens")
         self.assertEqual([game["mfr"] for game in aliens[:2]], ["Original", "Data East"])
 
@@ -156,6 +161,7 @@ class LibraryMigrationTests(unittest.TestCase):
             con.close()
 
             lib = Library(db)
+            self.assertEqual(lib.get(1)["additional_info"], "")
             self.assertEqual([r["name"] for r in lib.missing_artwork(only_untried=True)], ["A"])
             lib.mark_art_tried(1)
             self.assertEqual(lib.missing_artwork(only_untried=True), [])

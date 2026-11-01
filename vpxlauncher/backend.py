@@ -50,10 +50,10 @@ class Backend(QObject):
     artCandidatesChanged = Signal()
     artCandidatesReady = Signal()
     _scanDone = Signal(list)
-    _artResult = Signal(int, str)
+    _artResult = Signal(int, str, str, str)
     _artDone = Signal(str)
     _artCandidatesLoaded = Signal(int, list, str)
-    _artChoiceDone = Signal(int, str, str)
+    _artChoiceDone = Signal(int, str, str, str, str)
 
     def __init__(self, library: Library, settings: config.Settings, model: TableModel, parent=None):
         super().__init__(parent)
@@ -450,7 +450,13 @@ class Backend(QObject):
         self._art_found = 0
         self._set_fetching_art(True)
         self._set_status(self._text("Downloading artwork: {done}/{total}...", done=0, total=len(rows)))
-        jobs = [{"id": r["id"], "name": r["name"]} for r in rows]
+        jobs = [
+            {
+                "id": r["id"],
+                "name": " ".join(part for part in (r["name"], r.get("additional_info", "")) if part),
+            }
+            for r in rows
+        ]
         threading.Thread(target=self._art_worker, args=(jobs,), daemon=True).start()
 
     def _art_worker(self, jobs: list[dict]) -> None:
@@ -464,8 +470,12 @@ class Backend(QObject):
         art_dir.mkdir(parents=True, exist_ok=True)
         for job in jobs:
             path = ""
+            matched_title = ""
+            additional_info = ""
             try:
                 game = index.find(job["name"])
+                if game:
+                    matched_title, additional_info = vps.matched_title_info(job["name"], game["name"])
                 url = index.image_url(game, job["name"]) if game else ""
                 if url:
                     data = vps.http_get(url, timeout=30)
@@ -476,26 +486,29 @@ class Backend(QObject):
                         path = str(dest)
             except Exception:
                 path = ""  # jedna nieudana grafika nie zatrzymuje reszty
-            self._artResult.emit(job["id"], path)
+            self._artResult.emit(job["id"], path, matched_title, additional_info)
         self._artDone.emit("")
 
-    @Slot(int, str)
-    def _on_art_result(self, table_id: int, path: str) -> None:
+    @Slot(int, str, str, str)
+    def _on_art_result(self, table_id: int, path: str, matched_title: str, additional_info: str) -> None:
         self._art_seen += 1
         self._lib.mark_art_tried(table_id)
+        row = self._lib.get(table_id)
+        if row and matched_title:
+            self._lib.set_table_title_and_info(table_id, matched_title, additional_info)
         if path:
-            row = self._lib.get(table_id)
             # Nie nadpisuj grafiki dodanej ręcznie w trakcie pobierania (chyba że to jawne "znajdź ponownie").
             if row is not None and (row["artwork"] == "" or table_id in self._art_force):
                 self._drop_managed_artwork(row["artwork"])
                 self._lib.set_artwork(table_id, path)
                 self._art_found += 1
-                self._model.update_row(self._lib.get(table_id))
             else:
                 try:
                     os.remove(path)
                 except OSError:
                     pass
+        if row and (matched_title or path):
+            self._model.update_row(self._lib.get(table_id))
         self._set_status(self._text(
             "Downloading artwork: {done}/{total}...",
             done=self._art_seen,
@@ -540,17 +553,20 @@ class Backend(QObject):
         self._set_status(self._text("Searching artwork candidates for {name}...", name=row["name"]))
         threading.Thread(
             target=self._art_candidates_worker,
-            args=(table_id, row["name"]),
+            args=(table_id, row["name"], row.get("additional_info", "")),
             daemon=True,
         ).start()
 
-    def _art_candidates_worker(self, table_id: int, name: str) -> None:
+    def _art_candidates_worker(self, table_id: int, name: str, additional_info: str) -> None:
         extra = [self._settings.vps_db_url] if self._settings.vps_db_url else []
         try:
             index = vps.VpsIndex.load(config.data_dir() / "vps-index.json", extra)
             candidates = []
-            for game in index.find_candidates(name, limit=40):
-                url = index.image_url(game, name)
+            search_name = " ".join(
+                part for part in (name, additional_info) if part
+            )
+            for game in index.find_candidates(search_name, limit=40):
+                url = index.image_url(game, search_name)
                 if url:
                     candidates.append({
                         "name": game["name"],
@@ -610,15 +626,20 @@ class Backend(QObject):
             self._set_status(self._text("This table is no longer in the library."))
             return
         url = self._art_candidate_urls[candidate_index]
+        canonical_title = self._art_candidates[candidate_index]["name"]
+        search_name = " ".join(
+            part for part in (row["name"], row.get("additional_info", "")) if part
+        )
+        matched_title, additional_info = vps.matched_title_info(search_name, canonical_title)
         self._set_fetching_art(True)
         self._set_status(self._text("Downloading selected artwork..."))
         threading.Thread(
             target=self._art_choice_worker,
-            args=(table_id, url),
+            args=(table_id, url, matched_title, additional_info),
             daemon=True,
         ).start()
 
-    def _art_choice_worker(self, table_id: int, url: str) -> None:
+    def _art_choice_worker(self, table_id: int, url: str, title: str, additional_info: str) -> None:
         try:
             data = vps.http_get(url, timeout=30)
             ext = vps.sniff_image_ext(data)
@@ -628,12 +649,14 @@ class Backend(QObject):
             art_dir.mkdir(parents=True, exist_ok=True)
             dest = art_dir / f"{table_id}-{int(time.time() * 1000)}{ext}"
             dest.write_bytes(data)
-            self._artChoiceDone.emit(table_id, str(dest), "")
+            self._artChoiceDone.emit(table_id, str(dest), title, additional_info, "")
         except Exception as exc:
-            self._artChoiceDone.emit(table_id, "", str(exc) or type(exc).__name__)
+            self._artChoiceDone.emit(table_id, "", "", "", str(exc) or type(exc).__name__)
 
-    @Slot(int, str, str)
-    def _on_art_choice_done(self, table_id: int, path: str, error: str) -> None:
+    @Slot(int, str, str, str, str)
+    def _on_art_choice_done(
+        self, table_id: int, path: str, title: str, additional_info: str, error: str
+    ) -> None:
         self._set_fetching_art(False)
         if error:
             self._set_status(self._text("Could not download selected artwork: {error}", error=error))
@@ -647,13 +670,14 @@ class Backend(QObject):
             self._set_status(self._text("This table is no longer in the library."))
             return
         self._drop_managed_artwork(row["artwork"])
+        self._lib.set_table_title_and_info(table_id, title, additional_info)
         self._lib.set_artwork(table_id, path)
         self._lib.mark_art_tried(table_id)
         self._model.update_row(self._lib.get(table_id))
         self._art_candidates = []
         self._art_candidate_urls = []
         self.artCandidatesChanged.emit()
-        self._set_status(self._text("Set artwork for: {name}.", name=row["name"]))
+        self._set_status(self._text("Set artwork for: {name}.", name=title))
 
     # ---- log gry -------------------------------------------------------------
     def _log_file(self) -> Path:

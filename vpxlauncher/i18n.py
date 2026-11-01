@@ -50,6 +50,7 @@ TRANSLATIONS = {
         "Close": "Zamknij",
         "Drop an image here": "Upuść tu obraz",
         "Last played: {date}": "Ostatnio: {date}",
+        "Info: {info}": "Info: {info}",
         "Search tables or authors (Ctrl+F)": "Szukaj stołu lub autora (Ctrl+F)",
         "Favorites only": "Tylko ulubione",
         "Sort:": "Sortuj:",

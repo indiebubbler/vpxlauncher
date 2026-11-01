@@ -124,6 +124,17 @@ def parse_stem(stem: str) -> tuple[str, int, str]:
     return title.strip(" -_."), year, mfr
 
 
+def matched_title_info(stem: str, canonical_title: str) -> tuple[str, str]:
+    """Split a matched title into its canonical name and any trailing title qualifier."""
+    parsed_title = parse_stem(stem)[0]
+    canonical_key = title_key(canonical_title)
+    for match in re.finditer(r"\S+", parsed_title):
+        if title_key(parsed_title[:match.end()]) == canonical_key:
+            info = parsed_title[match.end():].strip(" -_.,;:")
+            return canonical_title, info
+    return canonical_title, ""
+
+
 # ---- indeks bazy -------------------------------------------------------------
 def compact(raw_games) -> list[dict]:
     """Zmniejsza ogromny vpsdb.json do pól potrzebnych do dopasowania grafik."""

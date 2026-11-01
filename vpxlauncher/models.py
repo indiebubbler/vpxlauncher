@@ -6,7 +6,10 @@ from datetime import datetime
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QUrl
 
-ROLES = ["tableId", "title", "author", "version", "artwork", "favorite", "playCount", "lastPlayed"]
+ROLES = [
+    "tableId", "title", "additionalInfo", "author", "version",
+    "artwork", "favorite", "playCount", "lastPlayed",
+]
 FIRST_ROLE = 0x0100 + 1  # Qt::UserRole + 1
 
 
@@ -17,6 +20,7 @@ def present(row: dict) -> dict:
     return {
         "tableId": row["id"],
         "title": row["name"],
+        "additionalInfo": row.get("additional_info") or "",
         "author": row.get("author") or "",
         "version": row.get("version") or "",
         "artwork": url,
